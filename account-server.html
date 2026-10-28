@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>星际账号管理中心 · XJ Store</title>
+<script src="assets/head.js"></script>
+<link rel="stylesheet" href="assets/base.css" />
+<style>
+  .wrap { width: 100%; max-width: min(var(--page-w), 100% - 32px); margin: 0 auto; padding: 22px 22px 0; }
+  .layout { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 18px; align-items: start; }
+
+  /* ============ 星际门禁 ============ */
+  .gate { position: relative; min-height: calc(100vh - var(--header-h)); display: grid; place-items: center; padding: 40px 20px; overflow: hidden; }
+  .gate-bg {
+    position: absolute; inset: 0; z-index: 0;
+    background:
+      radial-gradient(1100px 560px at 12% 8%, rgba(99, 102, 241, .30), transparent 60%),
+      radial-gradient(900px 520px at 88% 92%, rgba(43, 109, 246, .32), transparent 60%),
+      linear-gradient(160deg, #0b1026 0%, #131a3a 46%, #1b2350 100%);
+  }
+  .gate-bg::after {
+    content: ""; position: absolute; inset: 0; opacity: .75;
+    background-image:
+      radial-gradient(1.6px 1.6px at 20% 28%, #fff, transparent),
+      radial-gradient(1.6px 1.6px at 72% 18%, #cdd6ff, transparent),
+      radial-gradient(1px 1px at 42% 68%, #fff, transparent),
+      radial-gradient(1.6px 1.6px at 86% 58%, #fff, transparent),
+      radial-gradient(1px 1px at 56% 86%, #cdd6ff, transparent),
+      radial-gradient(1px 1px at 12% 82%, #fff, transparent),
+      radial-gradient(1.4px 1.4px at 34% 12%, #fff, transparent);
+  }
+  .gate-inner { position: relative; z-index: 1; width: 100%; max-width: 420px; text-align: center; }
+  .gate-brand { margin-bottom: 22px; color: #fff; }
+  .gate-logo {
+    width: 64px; height: 64px; margin: 0 auto 14px; border-radius: 18px;
+    background: linear-gradient(135deg, #6366f1, #2b6df6); display: grid; place-items: center;
+    font-size: 30px; color: #fff; box-shadow: 0 12px 32px rgba(43, 109, 246, .55);
+  }
+  .gate-brand h1 { font-size: 25px; font-weight: 800; margin: 0 0 8px; letter-spacing: 1px; }
+  .gate-brand p { font-size: 13.5px; color: rgba(255, 255, 255, .72); margin: 0; }
+  .gate-card { padding: 26px 26px 24px; text-align: left; }
+  .gate-store { display: inline-block; margin-top: 18px; color: rgba(255, 255, 255, .72); font-size: 13.5px; text-decoration: none; }
+  .gate-store:hover { color: #fff; }
+  .gate-err { color: var(--red); font-size: 13px; margin-top: 12px; display: none; }
+  .gate-err.show { display: block; }
+
+  .tabs { position: relative; display: flex; gap: 4px; background: var(--surface-2); padding: 4px; border-radius: 999px; margin-bottom: 22px; }
+  .tabs button {
+    position: relative; z-index: 2; flex: 1; height: 38px; border-radius: 999px; font-size: 14px;
+    color: var(--text-2); background: transparent; border: none; cursor: pointer; transition: color .22s;
+  }
+  .tabs button.active { color: var(--primary); font-weight: 600; }
+  .tabs .tab-indicator {
+    position: absolute; z-index: 1; top: 4px; bottom: 4px; left: 0; width: 0; border-radius: 999px;
+    background: var(--surface); box-shadow: var(--shadow-card);
+    transition: transform .3s cubic-bezier(.22, .61, .36, 1), width .3s cubic-bezier(.22, .61, .36, 1);
+    will-change: transform, width;
+  }
+  html.glass-mode .tabs .tab-indicator { background: #fff; }
+  .view { display: none; }
+  .view.active { display: block; animation: fadeUp .35s cubic-bezier(.22, .61, .36, 1) both; }
+
+  .pw-wrap { position: relative; }
+  .pw-toggle {
+    position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+    width: 30px; height: 30px; border-radius: 6px; display: grid; place-items: center; color: var(--text-3);
+  }
+  .pw-toggle:hover { color: var(--primary); background: var(--surface-2); }
+  .pw-toggle svg { width: 16px; height: 16px; }
+
+  /* ============ 管理面板（复用个人中心结构） ============ */
+  .profile { padding: 28px 24px 24px; text-align: center; }
+  .avatar {
+    width: 76px; height: 76px; border-radius: 50%; margin: 0 auto 14px;
+    background: linear-gradient(135deg, var(--primary), #7ab0ff);
+    display: grid; place-items: center; color: #fff; font-size: 30px; font-weight: 700;
+    box-shadow: 0 6px 18px rgba(43, 109, 246, .35);
+  }
+  .p-name { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+  .p-mail { font-size: 13px; color: var(--text-3); margin-bottom: 14px; word-break: break-all; }
+  .p-level-row { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px; color: #fff; font-weight: 700; font-size: 13px; margin-bottom: 16px; }
+  .p-point { font-size: 13px; color: var(--text-2); margin-bottom: 18px; }
+  .p-point b { color: var(--primary); font-size: 16px; }
+  .p-menu { display: flex; flex-direction: column; gap: 4px; text-align: left; }
+  .p-menu a, .p-menu button {
+    display: flex; align-items: center; gap: 10px; width: 100%;
+    padding: 10px 12px; border-radius: 8px; font-size: 14px;
+    color: var(--text-2); transition: all .15s; background: none; border: none; cursor: pointer;
+  }
+  .p-menu a:hover, .p-menu button:hover { background: var(--surface-2); color: var(--text); }
+  .p-menu svg { width: 16px; height: 16px; }
+  .p-menu .danger:hover { background: #fff1f0; color: var(--red); }
+
+  .panel { padding: 22px 24px 24px; }
+  .panel .section-title { margin-bottom: 16px; }
+
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 18px; }
+  .stat { padding: 18px 20px; text-align: center; }
+  .stat .n { font-size: 24px; font-weight: 800; margin-bottom: 4px; }
+  .stat .t { font-size: 12.5px; color: var(--text-3); }
+  .stat .n.c1 { color: var(--primary); } .stat .n.c2 { color: #f59e0b; } .stat .n.c3 { color: var(--green); }
+
+  .tiers { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  .tier { padding: 16px 16px 18px; border-radius: var(--radius); border: 1.5px solid var(--border); background: var(--surface-2); text-align: center; }
+  .tier .tname { font-size: 15px; font-weight: 800; color: #fff; padding: 4px 0; border-radius: 8px; margin-bottom: 10px; }
+  .tier .tzhe { font-size: 26px; font-weight: 800; }
+  .tier .tdesc { font-size: 12.5px; color: var(--text-3); margin-top: 4px; }
+  .tier.cur { border-color: var(--primary); box-shadow: 0 4px 14px rgba(43, 109, 246, .18); }
+  .tier .tag { margin-top: 10px; }
+
+  .calc { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+  .calc .field { margin-bottom: 0; }
+  .calc .input { width: 160px; }
+  .calc-out { font-size: 14px; color: var(--text-2); }
+  .calc-out b { color: var(--primary); font-size: 18px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th { text-align: left; font-weight: 600; color: var(--text-3); font-size: 12.5px; padding: 0 12px 12px; border-bottom: 1px solid var(--border); }
+  td { padding: 14px 12px; border-bottom: 1px solid var(--border); color: var(--text-2); }
+  tr:last-child td { border-bottom: none; }
+  td.no { font-family: ui-monospace, Consolas, monospace; font-size: 12.5px; color: var(--text); }
+  .td-name { color: var(--text); font-weight: 600; }
+
+  .empty-row { text-align: center; padding: 40px 0; color: var(--text-3); font-size: 13.5px; }
+  .thumb-sm { width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; font-size: 17px; overflow: hidden; }
+  .mini { padding: 5px 12px; border-radius: 7px; font-size: 12.5px; background: var(--surface-2); color: var(--text-2); transition: all .15s; cursor: pointer; border: none; }
+  .mini:hover { background: var(--primary-soft); color: var(--primary); }
+  .mini.danger:hover { background: #fff1f0; color: var(--red); }
+
+  html.mobile-layout { .layout { grid-template-columns: 1fr; } .wrap { padding: 16px 14px 0; } }
+</style>
+</head>
+<body>
+
+<div id="header"></div>
+
+<!-- ============ 星际门禁 ============ -->
+<div id="gate" class="gate">
+  <div class="gate-bg"></div>
+  <div class="gate-inner">
+    <div class="gate-brand">
+      <div class="gate-logo">✦</div>
+      <h1 data-i18n="星际账号管理中心">星际账号管理中心</h1>
+      <p data-i18n="欢迎来到星际账号管理中心">欢迎来到星际账号管理中心</p>
+    </div>
+
+    <div class="card gate-card anim-up">
+      <div class="tabs">
+        <button class="active" data-gate="login" data-i18n="登录">登录</button>
+        <button data-gate="register" data-i18n="注册">注册</button>
+        <span class="tab-indicator"></span>
+      </div>
+
+      <!-- 登录 -->
+      <div class="view active" id="g-login">
+        <div class="field">
+          <label class="field-label" data-i18n="邮箱 / 用户名">邮箱 / 用户名</label>
+          <input class="input" id="lUser" placeholder="you@example.com" autocomplete="username" />
+        </div>
+        <div class="field">
+          <label class="field-label" data-i18n="密码">密码</label>
+          <div class="pw-wrap">
+            <input class="input" id="lPwd" type="password" placeholder="请输入密码" autocomplete="current-password" />
+            <button class="pw-toggle" data-pw="lPwd" title="显示密码">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.8"/></svg>
+            </button>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-block" id="lSubmit">登录</button>
+      </div>
+
+      <!-- 注册 -->
+      <div class="view" id="g-register">
+        <div class="field">
+          <label class="field-label" data-i18n="邮箱">邮箱</label>
+          <input class="input" id="rMail" placeholder="you@example.com" autocomplete="email" />
+        </div>
+        <div class="field">
+          <label class="field-label" data-i18n="用户名">用户名</label>
+          <input class="input" id="rName" placeholder="2-16 个字符" autocomplete="username" />
+        </div>
+        <div class="field">
+          <label class="field-label" data-i18n="密码">密码</label>
+          <div class="pw-wrap">
+            <input class="input" id="rPwd" type="password" placeholder="至少 8 位，含字母和数字" autocomplete="new-password" />
+            <button class="pw-toggle" data-pw="rPwd" title="显示密码">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.8"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label" data-i18n="确认密码">确认密码</label>
+          <input class="input" id="rPwd2" type="password" placeholder="再次输入密码" autocomplete="new-password" />
+        </div>
+        <button class="btn btn-primary btn-block" id="rSubmit">注册</button>
+      </div>
+
+      <div class="gate-err" id="gErr"></div>
+    </div>
+
+    <a class="gate-store" href="store.html" data-i18n="进入商店">进入商店 →</a>
+  </div>
+</div>
+
+<!-- ============ 管理面板 ============ -->
+<div id="app" class="wrap" style="display:none">
+  <div class="layout">
+    <aside class="card profile anim-up" id="profile"></aside>
+
+    <div>
+      <div class="card panel anim-up" id="settingsCard" style="display:none;margin-bottom:18px">
+        <div class="section-title" data-i18n="账户设置">账户设置</div>
+        <div class="field">
+          <label class="field-label" data-i18n="用户名">用户名</label>
+          <input class="input" id="setName" />
+        </div>
+        <div class="field">
+          <label class="field-label" data-i18n="邮箱">邮箱</label>
+          <input class="input" id="setMail" type="email" />
+        </div>
+        <div class="field">
+          <label class="field-label" data-i18n="手机号">手机号</label>
+          <input class="input" id="setPhone" />
+        </div>
+        <div class="field">
+          <label class="field-label" data-i18n="QQ">QQ</label>
+          <input class="input" id="setQQ" />
+        </div>
+        <div class="field">
+          <label class="field-label" data-i18n="微信">微信</label>
+          <input class="input" id="setWechat" />
+        </div>
+        <div class="field">
+          <label class="field-label" data-i18n="默认联系方式">默认联系方式</label>
+          <div class="seg" id="setContactSeg">
+            <span class="seg-thumb" id="setContactThumb"></span>
+            <button type="button" data-ct="qq">QQ</button>
+            <button type="button" data-ct="wechat">微信</button>
+            <button type="button" data-ct="mail">邮箱</button>
+            <button type="button" data-ct="phone">手机号</button>
+          </div>
+          <input type="hidden" id="setContact" value="mail" />
+        </div>
+        <div class="field">
+          <label class="field-label" data-i18n="修改密码（留空则不修改）">修改密码（留空则不修改）</label>
+          <input class="input" id="setPwd" type="password" placeholder="新密码" />
+        </div>
+        <div class="alert danger" id="setErr" style="display:none"></div>
+        <div style="display:flex;gap:10px;margin-top:6px">
+          <button class="btn btn-primary btn-sm" id="setSave" data-i18n="保存">保存</button>
+          <button class="btn btn-outline btn-sm" id="setCancel" data-i18n="取消">取消</button>
+        </div>
+      </div>
+
+      <div class="card panel anim-up" id="appCard" style="display:none;margin-bottom:18px">
+        <div class="section-title" data-i18n="应用接入 · 开发者密钥">应用接入 · 开发者密钥</div>
+        <p style="font-size:13px;color:var(--text-2);margin:0 0 16px;line-height:1.7">
+          将下方密钥配置到你的网站，即可接入「用 XJ 账号登录」。App ID 可公开（用于跳转参数），App Key 请仅在<b>服务端</b>保管，切勿暴露到浏览器前端。
+        </p>
+        <div class="field">
+          <label class="field-label" data-i18n="App ID（公开，用于跳转参数）">App ID（公开，用于跳转参数）</label>
+          <div class="row">
+            <input class="input" id="appId" readonly />
+            <button class="btn btn-outline btn-sm" id="appIdCopy" data-i18n="复制">复制</button>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label" data-i18n="App Key（密钥，仅服务端使用）">App Key（密钥，仅服务端使用）</label>
+          <div class="row">
+            <input class="input" id="appKey" type="password" readonly />
+            <button class="btn btn-outline btn-sm" id="appKeyReveal" data-i18n="显示">显示</button>
+            <button class="btn btn-outline btn-sm" id="appKeyCopy" data-i18n="复制">复制</button>
+            <button class="btn btn-outline btn-sm danger" id="appKeyRotate" data-i18n="轮换">轮换</button>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label" data-i18n="接入代码示例（替换你的域名后使用）">接入代码示例（替换你的域名后使用）</label>
+          <textarea class="input" id="appCode" readonly rows="11" style="font-family:ui-monospace,Consolas,monospace;font-size:12px;line-height:1.55;resize:vertical"></textarea>
+        </div>
+      </div>
+
+      <div class="stats" id="stats"></div>
+
+      <div class="card panel anim-up" style="margin-bottom:18px">
+        <div class="section-title" data-i18n="会员等级与折扣">会员等级与折扣</div>
+        <div class="tiers" id="tiers"></div>
+        <div class="hr"></div>
+        <div class="section-title" style="margin-bottom:14px" data-i18n="折扣试算">折扣试算</div>
+        <div class="calc">
+          <div class="field">
+            <label class="field-label" data-i18n="原价（CNY）">原价（CNY）</label>
+            <input class="input" id="calcPrice" type="number" value="100" min="0" />
+          </div>
+          <div class="calc-out" id="calcOut"></div>
+        </div>
+      </div>
+
+      <div class="card panel anim-up" style="margin-bottom:18px">
+        <div class="section-title" data-i18n="最近订单">最近订单</div>
+        <div id="orders"></div>
+      </div>
+
+      <div class="card panel anim-up" style="margin-bottom:18px">
+        <div class="section-title" data-i18n="我的购买记录">我的购买记录</div>
+        <div id="myPurchases"></div>
+      </div>
+
+      <div class="card panel anim-up" id="favorites">
+        <div class="section-title" data-i18n="我的收藏">我的收藏</div>
+        <div id="myFavorites"><div class="empty-row">加载中…</div></div>
+      </div>
+
+      <div class="card panel anim-up">
+        <div class="section-title" data-i18n="我的兑换记录">我的兑换记录</div>
+        <div id="myRedemptions"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="footer"></div>
+<button class="to-top" id="toTop" title="回到顶部"></button>
+
+<script src="assets/base.js"></script>
+<script>
+const ICONS = {
+  order: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>',
+  cart:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2 3h3l2.4 12.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.6L21 7H6"/></svg>',
+  heart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 20s-7-4.4-7-9.4A4 4 0 0 1 12 8a4 4 0 0 1 7 2.6C19 15.6 12 20 12 20z"/></svg>',
+  set:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 9 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 4.6 9a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg>',
+  out:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M10 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>',
+  gift:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M3 12h18M12 8v13"/><path d="M12 8S9 3 7.5 4.5 9.5 8 12 8zM12 8s3-5 4.5-3.5S14.5 8 12 8z"/></svg>',
+  key:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3 20 3m-3.5 0 3.5 3.5m-3.5-3.5L17 6.5"/></svg>',
+};
+
+const isMail = s => /^[\w.+-]+@[\w-]+(\.[\w-]+)+$/.test(s);
+const REDIRECT = new URLSearchParams(location.search).get('redirect') || '';
+const APPID = new URLSearchParams(location.search).get('app') || ''; // 第三方应用公开标识，来自跳转参数
+const gate = document.getElementById('gate');
+const app = document.getElementById('app');
+
+/* ---------- 账号持久化 ---------- */
+function saveAccount(acct, token) {
+  localStorage.setItem('xj_user', JSON.stringify({
+    uid: acct.id, name: acct.name, mail: acct.mail, level: acct.level,
+    point: acct.point, banned: acct.banned, type: 'member',
+    phone: acct.phone || '', wechat: acct.wechat || '', contactType: acct.contactType || 'mail',
+    token: token || '',
+  }));
+}
+function getUser() { return XJ.user() || JSON.parse(localStorage.getItem('xj_user') || 'null'); }
+function orders() { try { return JSON.parse(localStorage.getItem('xj_orders') || '[]'); } catch (e) { return []; } }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function showGerr(msg) { const e = document.getElementById('gErr'); e.textContent = msg; e.classList.add('show'); }
+
+/* ---------- 门禁：登录 / 注册 滑动切换 ---------- */
+document.querySelector('.tabs').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-gate]');
+  if (!btn) return;
+  switchGate(btn.dataset.gate);
+});
+function switchGate(key) {
+  document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('active', b.dataset.gate === key));
+  document.querySelectorAll('#gate .view').forEach(v => v.classList.toggle('active', v.id === 'g-' + key));
+  moveIndicator();
+}
+function moveIndicator() {
+  const tabs = document.querySelector('.tabs');
+  if (!tabs) return;
+  const active = tabs.querySelector('button.active');
+  const ind = tabs.querySelector('.tab-indicator');
+  if (!active || !ind) return;
+  ind.style.width = active.offsetWidth + 'px';
+  ind.style.transform = 'translateX(' + active.offsetLeft + 'px)';
+}
+window.addEventListener('resize', () => requestAnimationFrame(moveIndicator));
+document.addEventListener('xj:langchange', () => requestAnimationFrame(moveIndicator));
+
+/* 显示 / 隐藏密码 */
+document.querySelectorAll('[data-pw]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const input = document.getElementById(btn.dataset.pw);
+    input.type = input.type === 'password' ? 'text' : 'password';
+  });
+});
+
+/* ---------- 签发票据并回跳到发起方（商店 / 第三方应用） ---------- */
+async function issueAndRedirect(acct, token) {
+  const r = await fetch('/api/stellar/issue', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ uid: acct.uid || acct.id, token: token || '', app: APPID }),
+  });
+  const j = await r.json();
+  if (!j.ok) throw new Error(j.msg || '授权失败');
+  const sep = REDIRECT.includes('?') ? '&' : '?';
+  location.href = REDIRECT + sep + 'stellar=' + encodeURIComponent(j.ticket);
+}
+
+/* ---------- 登录确认后：来自商店/应用则签发票据回跳，否则进管理面板 ---------- */
+async function afterLoginConfirm(acct, token) {
+  if (!REDIRECT) { enterApp(); return; }
+  try {
+    await issueAndRedirect(acct, token);
+  } catch (e) {
+    XJ.toast(e.message || '星际授权失败，已退回账号中心');
+    enterApp();
+  }
+}
+
+/* ---------- 登录 ---------- */
+document.getElementById('lSubmit').addEventListener('click', async () => {
+  const u = document.getElementById('lUser').value.trim();
+  const p = document.getElementById('lPwd').value;
+  document.getElementById('gErr').classList.remove('show');
+  if (!u || !p) { showGerr(XJ.tr('请输入邮箱或用户名')); return; }
+  try {
+    const r = await fetch('/api/account/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: u, pwd: p }) });
+    const j = await r.json();
+    if (!j.ok) { showGerr(j.msg || XJ.tr('登录失败')); return; }
+    saveAccount(j.account, j.token);
+    XJ.toast(XJ.tr('登录成功'));
+    afterLoginConfirm(j.account, j.token);
+  } catch (e) { showGerr(XJ.tr('无法连接服务，请确认服务已启动')); }
+});
+
+/* ---------- 注册 ---------- */
+document.getElementById('rSubmit').addEventListener('click', async () => {
+  const mail = document.getElementById('rMail').value.trim();
+  const name = document.getElementById('rName').value.trim();
+  const pwd = document.getElementById('rPwd').value;
+  const pwd2 = document.getElementById('rPwd2').value;
+  document.getElementById('gErr').classList.remove('show');
+  if (!isMail(mail)) { showGerr(XJ.tr('请输入正确的邮箱地址')); return; }
+  if (name.length < 2) { showGerr(XJ.tr('用户名至少 2 个字符')); return; }
+  if (!/^(?=.*[A-Za-z])(?=.*\d).{8,}$/.test(pwd)) { showGerr(XJ.tr('密码需至少 8 位且包含字母与数字')); return; }
+  if (pwd !== pwd2) { showGerr(XJ.tr('两次输入的密码不一致')); return; }
+  try {
+    const r = await fetch('/api/account/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, mail, pwd }) });
+    const j = await r.json();
+    if (!j.ok) { showGerr(j.msg || XJ.tr('注册失败')); return; }
+    saveAccount(j.account, j.token);
+    XJ.toast(XJ.tr('注册成功，已自动登录'));
+    afterLoginConfirm(j.account, j.token);
+  } catch (e) { showGerr(XJ.tr('无法连接服务，请确认服务已启动')); }
+});
+
+/* ---------- 进入管理面板 ---------- */
+function enterApp() {
+  const user = getUser();
+  if (!user || !user.uid) { showGate(); return; }
+  gate.style.display = 'none';
+  app.style.display = '';
+  renderMember(user);
+  XJ.init({ active: 'about' }); // 幂等：重新翻译新插入的动态内容
+}
+function showGate() {
+  app.style.display = 'none';
+  gate.style.display = '';
+  requestAnimationFrame(moveIndicator);
+}
+
+/* ---------- 渲染会员面板（移植自个人中心） ---------- */
+function renderMember(user) {
+  const L = XJ.levelInfo(user.level);
+  const isDiscount = L.rate < 1;
+  document.getElementById('profile').innerHTML = `
+    <div class="avatar">${esc(user.name || 'X').slice(0, 1).toUpperCase()}</div>
+    <div class="p-name">${esc(user.name)}</div>
+    <div class="p-mail">${esc(user.mail) || '未绑定邮箱'}</div>
+    <div class="p-level-row" style="background:${L.color}">${L.name}${isDiscount ? ' · ' + L.zhe + '折' : ''}</div>
+    <div class="p-point">我的积分 <b>${user.point || 0}</b></div>
+    <div class="p-menu">
+      <a href="order.html">${ICONS.order} 我的订单</a>
+      <a href="cart.html">${ICONS.cart} 我的购物车</a>
+      <a href="redeem.html">${ICONS.gift} 卡密兑换</a>
+      <a href="#favorites">${ICONS.heart} 我的收藏</a>
+      <button id="settingsBtn">${ICONS.set} 账户设置</button>
+      <button id="appBtn">${ICONS.key} 应用接入</button>
+      <button class="danger" id="logoutBtn">${ICONS.out} 退出登录</button>
+    </div>`;
+
+  document.getElementById('logoutBtn').addEventListener('click', () => {
+    localStorage.removeItem('xj_user');
+    XJ.toast(XJ.tr('已退出登录'));
+    setTimeout(() => location.reload(), 700);
+  });
+  document.getElementById('settingsBtn').addEventListener('click', openSettings);
+  document.getElementById('appBtn').addEventListener('click', openAppPanel);
+
+  /* 统计 */
+  const list = orders();
+  const spend = list.reduce((n, o) => n + (o.total || 0), 0);
+  document.getElementById('stats').innerHTML = `
+    <div class="card stat"><div class="n c1">${list.length}</div><div class="t">累计订单</div></div>
+    <div class="card stat"><div class="n c2">${spend.toFixed(2)}</div><div class="t">累计消费 CNY</div></div>
+    <div class="card stat"><div class="n c3">${user.point || 0}</div><div class="t">我的积分</div></div>
+    <div class="card stat"><div class="n" style="color:${L.color}">${isDiscount ? L.zhe + '折' : '无'}</div><div class="t">我的折扣</div></div>`;
+
+  document.getElementById('tiers').innerHTML = renderTiers(user.level);
+
+  /* 最近订单（本地） */
+  const STATUS = { paid: ['已完成', 'green'], pending: ['待支付', 'orange'], delivering: ['交付中', 'blue'], refunded: ['已退款', 'red'] };
+  document.getElementById('orders').innerHTML = list.length ? `
+    <table>
+      <thead><tr><th>订单号</th><th>下单时间</th><th>金额</th><th>状态</th><th></th></tr></thead>
+      <tbody>
+        ${list.slice(0, 8).map(o => {
+          const st = STATUS[o.status] || STATUS.paid;
+          return `<tr>
+            <td class="no">${o.no}</td>
+            <td>${o.serverTime || o.time}</td>
+            <td>${Number(o.total || 0).toFixed(2)} CNY</td>
+            <td><span class="tag ${st[1]}">${st[0]}</span></td>
+            <td style="text-align:right"><a href="order.html?no=${o.no}" style="color:var(--primary);font-size:13px">查看</a></td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>` : `<div class="empty-row">还没有订单记录，<a href="store.html" style="color:var(--primary)">去商店看看</a></div>`;
+
+  /* 我的购买记录（服务端） */
+  fetch('/api/account/purchases?uid=' + encodeURIComponent(user.uid) + '&token=' + encodeURIComponent(user.token || ''))
+    .then(r => r.json())
+    .then(j => {
+      const arr = (j.ok && j.list) || [];
+      document.getElementById('myPurchases').innerHTML = arr.length ? `
+        <table>
+          <thead><tr><th>商品</th><th style="width:90px">金额</th><th style="width:80px">方式</th><th style="width:130px">时间</th></tr></thead>
+          <tbody>
+            ${arr.map(p => `<tr>
+              <td>${esc(p.productTitle)}</td>
+              <td>${Number(p.amount || 0).toFixed(2)}</td>
+              <td>${esc(p.pay) || '-'}</td>
+              <td>${esc(p.time)}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>` : `<div class="empty-row">暂无购买记录</div>`;
+    })
+    .catch(() => { document.getElementById('myPurchases').innerHTML = `<div class="empty-row">无法加载（请确认服务已启动）</div>`; });
+
+  /* 我的兑换记录（服务端，并同步本地 user） */
+  fetch('/api/account/me?uid=' + encodeURIComponent(user.uid) + '&token=' + encodeURIComponent(user.token || ''))
+    .then(r => r.json())
+    .then(j => {
+      const acct = (j.ok && j.account) || null;
+      const arr = (acct && acct.redemptions) || [];
+      if (acct) {
+        const u2 = Object.assign({}, getUser(), {
+          level: acct.level, point: acct.point, vipExpireAt: acct.vipExpireAt,
+          redemptions: acct.redemptions || [], name: acct.name,
+        });
+        localStorage.setItem('xj_user', JSON.stringify(u2));
+      }
+      document.getElementById('myRedemptions').innerHTML = arr.length ? `
+        <table>
+          <thead><tr><th>卡密</th><th style="width:130px">获得权益</th><th style="width:110px">时间</th></tr></thead>
+          <tbody>
+            ${arr.map(h => `<tr>
+              <td class="no">${esc(h.code)}</td>
+              <td><span class="tag blue">${esc(h.desc)}</span></td>
+              <td>${esc(h.time) || ''}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>` : `<div class="empty-row">暂无兑换记录，<a href="redeem.html" style="color:var(--primary)">去兑换卡密</a></div>`;
+    })
+    .catch(() => { document.getElementById('myRedemptions').innerHTML = `<div class="empty-row">无法加载（请确认服务已启动）</div>`; });
+
+  loadFavorites();
+  initCalc(user.level);
+}
+
+function renderTiers(curLevel) {
+  const order = ['svip', 'vip', 'lvip', 'none', ''];
+  return order.map(k => {
+    const L = XJ.LEVELS[k];
+    const isCur = String(curLevel || '') === k;
+    const zhe = L.zhe ? (L.zhe + '折') : '无折扣';
+    return `<div class="tier ${isCur ? 'cur' : ''}">
+      <div class="tname" style="background:${L.color}">${L.name}</div>
+      <div class="tzhe" style="color:${L.color}">${zhe}</div>
+      <div class="tdesc">${k === 'svip' ? '至尊会员专享' : k === 'vip' ? 'VIP 尊享' : k === 'lvip' ? '超级会员' : k === '' ? '未设置等级' : '默认等级'}</div>
+      ${isCur ? '<span class="tag blue">当前等级</span>' : ''}
+    </div>`;
+  }).join('');
+}
+
+function initCalc(level) {
+  const L = XJ.levelInfo(level);
+  const out = document.getElementById('calcOut');
+  function calc() {
+    const price = Number(document.getElementById('calcPrice').value) || 0;
+    const final = Number((price * L.rate).toFixed(2));
+    const off = Number((price - final).toFixed(2));
+    out.innerHTML = `你的等级 <b style="color:${L.color}">${L.name}</b>：原价 ${price.toFixed(2)} → 实付 <b>${final.toFixed(2)}</b> CNY（已省 ${off.toFixed(2)}）`;
+  }
+  const inp = document.getElementById('calcPrice');
+  if (inp) { inp.addEventListener('input', calc); calc(); }
+}
+
+/* 我的收藏（服务端，可取消收藏） */
+function renderFavorites(list) {
+  const box = document.getElementById('myFavorites');
+  if (!list.length) {
+    box.innerHTML = `<div class="empty-row">还没有收藏，<a href="store.html" style="color:var(--primary)">去商店逛逛</a></div>`;
+    return;
+  }
+  box.innerHTML = `
+    <table>
+      <thead><tr><th style="width:46px"></th><th>商品</th><th style="width:110px">价格</th><th style="width:150px;text-align:right">操作</th></tr></thead>
+      <tbody>
+        ${list.map(p => {
+          const prices = (p.specs || []).map(s => (s.price === undefined || s.price === null) ? Number(p.price) : Number(s.price));
+          const min = prices.length ? Math.min(...prices) : Number(p.price);
+          const multi = prices.length > 1 && Math.max(...prices) > min;
+          return `<tr>
+            <td><span class="thumb-sm" style="background:${p.color}">${p.image ? `<img src="${p.image}" alt="" style="width:100%;height:100%;object-fit:cover" />` : (p.emoji || '📦')}</span></td>
+            <td>
+              <div class="td-name">${esc(p.title)}</div>
+              <div style="font-size:12px;color:var(--text-3)">${esc(p.sub) || ''}${p.status === 'off' ? ' · <span style="color:var(--red)">已下架</span>' : ''}</div>
+            </td>
+            <td>${min.toFixed(2)}${multi ? ' 起' : ''} CNY</td>
+            <td style="text-align:right">
+              <a href="commodity.html?id=${p.id}" style="color:var(--primary);font-size:13px;margin-right:10px">查看</a>
+              <button class="mini danger" data-unfav="${p.id}">取消收藏</button>
+            </td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+  box.querySelectorAll('[data-unfav]').forEach(el => el.addEventListener('click', async () => {
+    try {
+      const r = await fetch('/api/account/favorite', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uid: getUser().uid, token: getUser().token || '', id: el.dataset.unfav }),
+      });
+      const j = await r.json();
+      if (j.ok) { XJ.toast(XJ.tr('已取消收藏')); loadFavorites(); }
+      else XJ.toast(j.msg || XJ.tr('操作失败'));
+    } catch (e) { XJ.toast(XJ.tr('操作失败，请确认服务已启动')); }
+  }));
+}
+function loadFavorites() {
+  const u = getUser();
+  fetch('/api/account/favorites?uid=' + encodeURIComponent(u.uid) + '&token=' + encodeURIComponent(u.token || ''))
+    .then(r => r.json())
+    .then(j => renderFavorites((j.ok && j.list) || []))
+    .catch(() => { document.getElementById('myFavorites').innerHTML = `<div class="empty-row">无法加载（请确认服务已启动）</div>`; });
+}
+
+/* ---------- 账户设置（默认联系方式滑动分段控件） ---------- */
+function setContactActive(val, move) {
+  const seg = document.getElementById('setContactSeg');
+  if (!seg) return;
+  seg.querySelectorAll('button[data-ct]').forEach(b => b.classList.toggle('active', b.dataset.ct === val));
+  document.getElementById('setContact').value = val;
+  if (move !== false) moveContactThumb();
+}
+function moveContactThumb() {
+  const seg = document.getElementById('setContactSeg');
+  const thumb = document.getElementById('setContactThumb');
+  if (!seg || !thumb) return;
+  const act = seg.querySelector('button.active');
+  if (!act) return;
+  thumb.style.width = act.offsetWidth + 'px';
+  thumb.style.transform = 'translateX(' + act.offsetLeft + 'px)';
+}
+document.getElementById('setContactSeg').addEventListener('click', e => {
+  const b = e.target.closest('button[data-ct]');
+  if (!b) return;
+  setContactActive(b.dataset.ct);
+});
+window.addEventListener('resize', () => requestAnimationFrame(moveContactThumb));
+document.addEventListener('xj:langchange', () => moveContactThumb());
+
+function openSettings() {
+  const u = getUser();
+  document.getElementById('setName').value = u.name || '';
+  document.getElementById('setMail').value = u.mail || '';
+  document.getElementById('setPhone').value = u.phone || '';
+  document.getElementById('setQQ').value = u.qq || '';
+  document.getElementById('setWechat').value = u.wechat || '';
+  document.getElementById('setPwd').value = '';
+  document.getElementById('setErr').style.display = 'none';
+  document.getElementById('settingsCard').style.display = '';
+  setContactActive(u.contactType || 'mail', false);
+  requestAnimationFrame(() => moveContactThumb());
+  document.getElementById('settingsCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+document.getElementById('setCancel').addEventListener('click', () => {
+  document.getElementById('settingsCard').style.display = 'none';
+});
+document.getElementById('setSave').addEventListener('click', async () => {
+  const u = getUser();
+  const err = document.getElementById('setErr');
+  err.style.display = 'none';
+  const body = {
+    uid: u.uid,
+    token: u.token || '',
+    name: document.getElementById('setName').value.trim(),
+    mail: document.getElementById('setMail').value.trim(),
+    phone: document.getElementById('setPhone').value.trim(),
+    qq: document.getElementById('setQQ').value.trim(),
+    wechat: document.getElementById('setWechat').value.trim(),
+    contactType: document.getElementById('setContact').value,
+    pwd: document.getElementById('setPwd').value,
+  };
+  if (!body.name) { err.textContent = XJ.tr('用户名不能为空'); err.style.display = ''; return; }
+  try {
+    const r = await fetch('/api/account/update', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const j = await r.json();
+    if (!j.ok) { err.textContent = j.msg || XJ.tr('保存失败'); err.style.display = ''; return; }
+    const u2 = Object.assign({}, getUser(), {
+      name: j.account.name, mail: j.account.mail, phone: j.account.phone,
+      qq: j.account.qq, wechat: j.account.wechat, contactType: j.account.contactType,
+    });
+    localStorage.setItem('xj_user', JSON.stringify(u2));
+    XJ.toast(XJ.tr('账户设置已保存'));
+    document.getElementById('settingsCard').style.display = 'none';
+    renderMember(u2);
+  } catch (e) { err.textContent = XJ.tr('保存失败，请确认服务已启动'); err.style.display = ''; }
+});
+
+/* ---------- 应用接入：查看 / 轮换 App Key，并生成接入代码示例 ---------- */
+function copyText(text, tip) {
+  const done = () => XJ.toast(tip || XJ.tr('已复制'));
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
+  } else { fallbackCopy(text, done); }
+}
+function fallbackCopy(text, done) {
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); done(); } catch (e) { XJ.toast(XJ.tr('复制失败，请手动复制')); }
+  document.body.removeChild(ta);
+}
+function buildSnippet(appId, appKey) {
+  return `// 1) 跳转到 XJ 账号中心授权登录（App ID 公开，放进跳转参数）
+const APP_ID = '${appId}';
+const REDIRECT_URI = 'https://你的网站.example/callback';
+location.href = 'https://你的XJ服务域名/account-server.html?redirect='
+  + encodeURIComponent(REDIRECT_URI) + '&app=' + APP_ID;
+
+// 2) 回调页收到 ?stellar=<ticket> 后，用 App Key 换取登录态（仅服务端调用，勿暴露到前端）
+const APP_KEY = '${appKey}';
+const r = await fetch('https://你的XJ服务域名/api/stellar/verify', {
+  method: 'POST', headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ ticket: new URLSearchParams(location.search).get('stellar'), app: APP_KEY }),
+});
+const j = await r.json();
+if (j.ok) {
+  // j.account 即为登录用户：{ id, name, mail, level, point, banned }
+  console.log('已登录：', j.account);
+}`;
+}
+async function openAppPanel() {
+  const u = getUser();
+  document.getElementById('appCard').style.display = '';
+  try {
+    const r = await fetch('/api/stellar/appkey', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ uid: u.uid, token: u.token || '' }),
+    });
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.msg || XJ.tr('获取密钥失败'));
+    document.getElementById('appId').value = j.appId;
+    document.getElementById('appKey').value = j.appKey;
+    document.getElementById('appCode').value = buildSnippet(j.appId, j.appKey);
+  } catch (e) {
+    XJ.toast(e.message || XJ.tr('获取密钥失败，请确认服务已启动'));
+    document.getElementById('appCard').style.display = 'none';
+    return;
+  }
+  document.getElementById('appCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+document.getElementById('appIdCopy').addEventListener('click', () => copyText(document.getElementById('appId').value, XJ.tr('App ID 已复制')));
+document.getElementById('appKeyCopy').addEventListener('click', () => copyText(document.getElementById('appKey').value, XJ.tr('App Key 已复制')));
+document.getElementById('appKeyReveal').addEventListener('click', () => {
+  const inp = document.getElementById('appKey');
+  const btn = document.getElementById('appKeyReveal');
+  if (inp.type === 'password') { inp.type = 'text'; btn.textContent = XJ.tr('隐藏'); }
+  else { inp.type = 'password'; btn.textContent = XJ.tr('显示'); }
+});
+document.getElementById('appKeyRotate').addEventListener('click', async () => {
+  const u = getUser();
+  if (!confirm(XJ.tr('轮换后旧密钥立即失效，确定继续？'))) return;
+  try {
+    const r = await fetch('/api/stellar/appkey', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ uid: u.uid, token: u.token || '', rotate: true }),
+    });
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.msg || XJ.tr('轮换失败'));
+    document.getElementById('appKey').value = j.appKey;
+    document.getElementById('appCode').value = buildSnippet(j.appId, j.appKey);
+    XJ.toast(XJ.tr('App Key 已轮换'));
+  } catch (e) { XJ.toast(e.message || XJ.tr('轮换失败')); }
+});
+
+/* ---------- 启动 ---------- */
+XJ.guardBanned();
+const curUser = getUser();
+if (curUser && curUser.uid && REDIRECT) {
+  // 本机已登录账号中心：自动签发票据回跳，无需再次输入密码；令牌失效则退回门禁重新登录
+  issueAndRedirect(curUser, curUser.token)
+    .catch(() => { showGate(); XJ.init({ active: 'about' }); });
+} else if (curUser && curUser.uid) {
+  enterApp();
+} else {
+  showGate();
+  XJ.init({ active: 'about' });
+}
+</script>
+</body>
+</html>

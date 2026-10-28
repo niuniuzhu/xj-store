@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>博客 · XJ Store</title>
+<script src="assets/head.js"></script>
+<link rel="stylesheet" href="assets/base.css" />
+<style>
+  .wrap { width: 100%; max-width: min(var(--page-w), 100% - 32px); margin: 0 auto; padding: 26px 22px 20px; }
+
+  .hero { text-align: center; padding: 20px 0 30px; animation: fadeUp .6s cubic-bezier(.22,.61,.36,1) both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+  .hero h1 { font-size: 34px; font-weight: 800; margin: 0 0 10px; letter-spacing: -.5px; }
+  .hero p { color: var(--text-2); font-size: 15px; margin: 0; }
+
+  .filters { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; margin-bottom: 28px; }
+  .chip {
+    padding: 7px 16px; border-radius: 999px; font-size: 13.5px;
+    background: var(--surface); color: var(--text-2);
+    border: 1px solid var(--border); transition: all .15s;
+  }
+  .chip:hover { border-color: var(--primary); color: var(--primary); }
+  .chip.active { background: var(--primary); color: #fff; border-color: var(--primary); font-weight: 600; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 18px; }
+
+  .post {
+    background: var(--surface); border-radius: var(--radius-lg); overflow: hidden;
+    box-shadow: var(--shadow-card); cursor: pointer;
+    transition: transform .2s cubic-bezier(.22,.61,.36,1), box-shadow .2s;
+    display: flex; flex-direction: column;
+  }
+  .post:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); }
+  .post-cover {
+    height: 168px; position: relative; overflow: hidden;
+    display: grid; place-items: center; font-size: 54px;
+  }
+  .post-cover::after {
+    content: ""; position: absolute; inset: 0;
+    background: radial-gradient(circle at 28% 20%, rgba(255,255,255,.34), transparent 62%);
+  }
+  .post:hover .post-cover::after { transform: scale(1.08); transition: transform .4s; }
+  .post-body { padding: 18px 20px 20px; flex: 1; display: flex; flex-direction: column; }
+  .post-tag { align-self: flex-start; margin-bottom: 10px; }
+  .post-title { font-size: 16.5px; font-weight: 700; margin: 0 0 8px; line-height: 1.45; }
+  .post-excerpt {
+    font-size: 13.5px; color: var(--text-2); line-height: 1.7; margin: 0 0 16px; flex: 1;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .post-meta { display: flex; align-items: center; gap: 12px; font-size: 12.5px; color: var(--text-3); }
+  .post-meta .dot { width: 3px; height: 3px; border-radius: 50%; background: var(--text-3); opacity: .6; }
+
+  .pager { display: flex; justify-content: center; gap: 8px; padding: 40px 0 10px; }
+  .pager button {
+    min-width: 38px; height: 38px; padding: 0 12px; border-radius: 8px;
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--text-2); font-size: 13.5px; transition: all .15s;
+  }
+  .pager button:hover { border-color: var(--primary); color: var(--primary); }
+  .pager button.active { background: var(--primary); color: #fff; border-color: var(--primary); font-weight: 600; }
+
+  /* 骨架 */
+  .sk-card { background: var(--surface); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-card); }
+  .sk-cover { height: 168px; }
+  .sk-body { padding: 18px 20px 20px; }
+  .sk-line { height: 13px; margin-bottom: 10px; }
+  .sk-line.w60 { width: 60%; } .sk-line.w40 { width: 40%; } .sk-line.w90 { width: 90%; }
+
+  html.mobile-layout {
+    .wrap { padding: 18px 14px; }
+    .hero h1 { font-size: 26px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="header"></div>
+
+<div class="wrap">
+  <div class="hero">
+    <h1>博客</h1>
+    <p>记录产品更新、技术实践与运营笔记</p>
+  </div>
+
+  <div class="filters" id="filters"></div>
+  <div class="grid" id="grid"></div>
+  <div class="pager" id="pager"></div>
+</div>
+
+<div id="footer"></div>
+<button class="to-top" id="toTop" title="回到顶部"></button>
+
+<script src="assets/base.js"></script>
+<script>
+const POSTS = [
+  { id: 10, tag: '公告', title: 'XJ Store v4.5.1 版本更新公告', excerpt: 'v4.5.1 为 XJ AI 带来图片与文档识别、对话重试、按钮动效与手机端切换按钮，顶栏品牌标识也同步焕新。', date: '2026-10-27', read: 3, emoji: '🤖', color: 'linear-gradient(135deg,#2b6df6,#35c6f4)' },
+  { id: 9, tag: '公告', title: 'XJ Store v4.0.0 版本更新公告', excerpt: 'v4.0.0 重大版本发布：全新四语言支持（中文 / English / 日本語 / 繁體中文）、液态玻璃质感一键切换、全局弹窗公告、滑动交互动画，以及全新的星际账号体系与账号管理中心。', date: '2026-10-22', read: 8, emoji: '🎉', color: 'linear-gradient(135deg,#8b5cf6,#ec4899)' },
+  { id: 8, tag: '公告', title: 'XJ Store v3.8.0 版本更新公告', excerpt: 'v3.8.0 正式发布：商品支持上传真实图片与多规格独立定价，商品名全面中文化，新增分类管理、商品下架与站点维护模式，商店运营更灵活可控。', date: '2026-10-14', read: 5, emoji: '📢', color: 'linear-gradient(135deg,#ef4444,#f87171)' },
+  { id: 7, tag: '公告', title: 'XJ Store v3.7.2 版本更新公告', excerpt: 'v3.7.2 正式发布：新增会员折扣、账户封禁、优惠券抵扣与卡密自助兑换四大能力，并完成支付密钥安全加固与服务端双重校验，购物更安心。', date: '2026-10-12', read: 6, emoji: '📢', color: 'linear-gradient(135deg,#ef4444,#f87171)' },
+  { id: 1, tag: '产品更新', title: 'XJ Store v1.2 更新：支持规格与限购', excerpt: '本次更新带来了多规格商品、限购规则、以及全新的深色主题，同时优化了移动端下的商品列表排版体验。', date: '2026-10-08', read: 6, emoji: '🚀', color: 'linear-gradient(135deg,#3b82f6,#60a5fa)' },
+  { id: 2, tag: '技术实践', title: '用 CSS 变量做一套可维护的主题系统', excerpt: '从设计变量出发，聊聊如何用一个 data-theme 属性驱动整站深浅色切换，以及如何避免刷新时的白屏闪烁。', date: '2026-10-05', read: 9, emoji: '🎨', color: 'linear-gradient(135deg,#8b5cf6,#a78bfa)' },
+  { id: 3, tag: '运营笔记', title: '数字商品的交付方式怎么选', excerpt: '自动发货、网盘交付、人工交付各有适用场景。本文对比三者的成本、风控与用户体验差异。', date: '2026-09-28', read: 7, emoji: '📦', color: 'linear-gradient(135deg,#f59e0b,#fbbf24)' },
+  { id: 4, tag: '技术实践', title: '前端骨架屏的三种实现方式', excerpt: '骨架屏并不是万能的。本文给出纯 CSS、伪元素与真实数据占位三种方案，并说明各自适用的加载场景。', date: '2026-09-20', read: 5, emoji: '⚡', color: 'linear-gradient(135deg,#14b8a6,#2dd4bf)' },
+  { id: 5, tag: '公告', title: '关于支付渠道维护的通知', excerpt: '因支付服务商例行维护，10 月 12 日凌晨 2:00-4:00 期间部分支付方式可能短暂不可用，请提前安排。', date: '2026-09-15', read: 3, emoji: '📢', color: 'linear-gradient(135deg,#ef4444,#f87171)' },
+  { id: 6, tag: '产品更新', title: '订单查询支持邮箱批量检索', excerpt: '现在可以直接用下单邮箱查询名下的全部订单，不再需要逐个记住订单号，交付内容也会一并展示。', date: '2026-09-08', read: 4, emoji: '🔍', color: 'linear-gradient(135deg,#059669,#34d399)' },
+];
+
+const TAGS = ['全部', ...new Set(POSTS.map(p => p.tag))];
+const PER_PAGE = 6;
+let curTag = '全部';
+let curPage = 1;
+
+const gridEl = document.getElementById('grid');
+const pagerEl = document.getElementById('pager');
+const filtersEl = document.getElementById('filters');
+
+function renderFilters() {
+  filtersEl.innerHTML = TAGS.map(t =>
+    `<button class="chip ${t === curTag ? 'active' : ''}" data-tag="${t}">${t}</button>`
+  ).join('');
+}
+
+function skeletonHTML() {
+  return Array.from({ length: 6 }).map(() => `
+    <div class="sk-card">
+      <div class="sk-cover skeleton"></div>
+      <div class="sk-body">
+        <div class="sk-line skeleton w40"></div>
+        <div class="sk-line skeleton w90"></div>
+        <div class="sk-line skeleton w90"></div>
+        <div class="sk-line skeleton w60"></div>
+      </div>
+    </div>`).join('');
+}
+
+function list() {
+  return curTag === '全部' ? POSTS : POSTS.filter(p => p.tag === curTag);
+}
+
+function render() {
+  const items = list();
+  const pages = Math.max(1, Math.ceil(items.length / PER_PAGE));
+  curPage = Math.min(curPage, pages);
+  const start = (curPage - 1) * PER_PAGE;
+  const pageItems = items.slice(start, start + PER_PAGE);
+
+  if (!pageItems.length) {
+    gridEl.innerHTML = `<div class="empty anim-in" style="grid-column:1/-1">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>
+      <div>该分类下暂无文章</div></div>`;
+    pagerEl.innerHTML = '';
+    return;
+  }
+
+  gridEl.innerHTML = pageItems.map((p, i) => `
+    <article class="post anim-up d${Math.min(i + 1, 6)}" data-id="${p.id}">
+      <div class="post-cover" style="background:${p.color}">${p.emoji}</div>
+      <div class="post-body">
+        <span class="tag blue post-tag">${p.tag}</span>
+        <h3 class="post-title">${p.title}</h3>
+        <p class="post-excerpt">${p.excerpt}</p>
+        <div class="post-meta">
+          <span>${p.date}</span><span class="dot"></span>
+          <span>${p.read} 分钟阅读</span>
+        </div>
+      </div>
+    </article>`).join('');
+
+  pagerEl.innerHTML = pages <= 1 ? '' :
+    Array.from({ length: pages }, (_, i) =>
+      `<button data-page="${i + 1}" class="${i + 1 === curPage ? 'active' : ''}">${i + 1}</button>`
+    ).join('');
+}
+
+filtersEl.addEventListener('click', e => {
+  const chip = e.target.closest('.chip');
+  if (!chip) return;
+  curTag = chip.dataset.tag;
+  curPage = 1;
+  renderFilters();
+  gridEl.innerHTML = skeletonHTML();
+  setTimeout(render, 450);
+});
+
+pagerEl.addEventListener('click', e => {
+  const btn = e.target.closest('button[data-page]');
+  if (!btn) return;
+  curPage = Number(btn.dataset.page);
+  gridEl.innerHTML = skeletonHTML();
+  setTimeout(() => { render(); window.scrollTo({ top: 220, behavior: 'smooth' }); }, 400);
+});
+
+gridEl.addEventListener('click', e => {
+  const card = e.target.closest('.post');
+  if (card) location.href = 'article.html?id=' + card.dataset.id;
+});
+
+renderFilters();
+/* 首屏先展示骨架屏，模拟加载，再渲染真实内容 */
+gridEl.innerHTML = skeletonHTML();
+setTimeout(render, 550);
+
+XJ.init({ active: 'blog' });
+</script>
+</body>
+</html>

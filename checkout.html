@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>结算 · XJ Store</title>
+<script src="assets/head.js"></script>
+<link rel="stylesheet" href="assets/base.css" />
+<style>
+  .wrap { width: 100%; max-width: min(var(--page-w), 100% - 32px); margin: 0 auto; padding: 22px 22px 0; }
+  .page-title { display: flex; align-items: center; gap: 9px; font-size: 22px; font-weight: 800; padding: 6px 2px 18px; }
+  .page-title::before { content: ""; width: 3px; height: 20px; border-radius: 2px; background: var(--primary); }
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 18px; align-items: start; }
+
+  .block { padding: 24px 26px 26px; margin-bottom: 18px; }
+  .block .section-title { margin-bottom: 20px; }
+
+  /* 分段滑动控件样式（含 .seg-thumb 滑块）由 assets/base.css 统一提供，此处不再重复定义 */
+
+  .pays { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  .pay {
+    display: flex; align-items: center; gap: 12px; padding: 14px 16px;
+    border: 1.5px solid var(--border); border-radius: var(--radius);
+    background: var(--surface); cursor: pointer; transition: all .15s;
+  }
+  .pay:hover { border-color: #c9d6f5; }
+  .pay.active { border-color: var(--primary); background: var(--primary-soft); }
+  .pay .pi {
+    width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center;
+    font-size: 19px; flex-shrink: 0; color: #fff;
+  }
+  .pay .pn { font-size: 14px; font-weight: 600; }
+  .pay .pd { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+  .pay .radio {
+    margin-left: auto; width: 18px; height: 18px; border-radius: 50%;
+    border: 2px solid var(--border-strong); flex-shrink: 0; transition: all .15s;
+  }
+  .pay.active .radio { border-color: var(--primary); background: var(--primary); box-shadow: inset 0 0 0 3px var(--surface); }
+
+  .summary { padding: 24px 26px 26px; position: sticky; top: calc(var(--header-h) + 22px); }
+  .s-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; }
+  .s-item .thumb { width: 42px; height: 42px; border-radius: 10px; display: grid; place-items: center; font-size: 19px; flex-shrink: 0; }
+  .s-item .n { flex: 1; min-width: 0; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .s-item .q { font-size: 12.5px; color: var(--text-3); flex-shrink: 0; }
+  .s-item .p { font-size: 13.5px; font-weight: 600; flex-shrink: 0; }
+  .s-row { display: flex; align-items: center; justify-content: space-between; font-size: 14px; margin-bottom: 14px; color: var(--text-2); }
+  .s-row.total { margin-top: 18px; padding-top: 18px; border-top: 1px dashed var(--border); color: var(--text); }
+  .s-row.total .num { font-size: 26px; font-weight: 800; color: var(--primary); }
+  .s-row .num { font-weight: 600; color: var(--text); }
+
+  .agree { display: flex; align-items: flex-start; gap: 8px; font-size: 12.5px; color: var(--text-3); margin-top: 14px; }
+  .agree input { accent-color: var(--primary); margin-top: 3px; }
+  .agree a { color: var(--primary); }
+
+  .coupon-row { display: flex; gap: 10px; }
+  .coupon-row .input { flex: 1; }
+  .coupon-msg { font-size: 12.5px; margin-top: 10px; min-height: 16px; }
+  .coupon-msg.ok { color: var(--green); }
+  .coupon-msg.err { color: #ef4444; }
+
+  html.mobile-layout {
+    .layout { grid-template-columns: 1fr; }
+    .summary { position: static; }
+    .wrap { padding: 16px 14px 0; }
+  }
+</style>
+</head>
+<body>
+
+<div id="header"></div>
+
+<div class="wrap">
+  <div class="page-title">确认订单</div>
+  <div class="layout">
+    <div>
+      <div class="card block anim-up">
+        <div class="section-title">联系方式</div>
+        <div class="field">
+          <label class="field-label">联系方式类型</label>
+          <div class="seg" id="ctSeg">
+            <span class="seg-thumb" id="ctThumb"></span>
+            <button class="active" data-ct="qq">QQ</button>
+            <button data-ct="wechat">微信</button>
+            <button data-ct="mail">邮箱</button>
+            <button data-ct="phone">手机号</button>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label" id="ctLabel">QQ 号码（用于发送卡密与订单通知）</label>
+          <input class="input" id="contact" placeholder="请输入 QQ 号，例如 3805506653" />
+          <div class="err-tip" id="contactErr">请输入 5-12 位 QQ 号</div>
+        </div>
+        <div class="field" style="margin-bottom:0">
+          <label class="field-label">订单备注（选填）</label>
+          <textarea class="textarea" id="note" rows="3" placeholder="如有特殊需求请在此说明"></textarea>
+        </div>
+      </div>
+
+      <div class="card block anim-up d2">
+        <div class="section-title">支付方式</div>
+        <div class="pays" id="pays"></div>
+      </div>
+
+      <div class="card block anim-up d4">
+        <div class="section-title">优惠券</div>
+        <div class="coupon-row">
+          <input class="input" id="couponInput" placeholder="输入优惠券码，如 XJ-NEW10" autocomplete="off" />
+          <button class="btn btn-outline" id="couponApply" type="button">应用</button>
+        </div>
+        <div class="coupon-msg" id="couponMsg"></div>
+      </div>
+    </div>
+
+    <aside class="card summary anim-up d3" id="summary"></aside>
+    <div id="capCheckout" style="margin-top:14px"></div>
+  </div>
+</div>
+
+<div id="footer"></div>
+<button class="to-top" id="toTop" title="回到顶部"></button>
+
+<script src="assets/base.js"></script>
+<script src="assets/cap.js"></script>
+<script>
+const PAYS = [
+  { key: 'alipay', name: '支付宝',   desc: '跳转支付宝完成付款', emoji: '💙', color: 'linear-gradient(135deg,#1677ff,#4da3ff)' },
+  { key: 'wxpay',  name: '微信支付', desc: '扫码完成付款',       emoji: '💚', color: 'linear-gradient(135deg,#22c55e,#4ade80)' },
+];
+
+/* 当前登录会员（用于下单折扣；折扣由服务端按原价重算，列表仍显示原价） */
+const ME = XJ.user();
+const ME_LEVEL = (ME && ME.uid) ? (ME.level || '') : '';
+const ME_L = XJ.levelInfo(ME_LEVEL);
+const ME_HAS_DISC = ME_L.rate < 1;
+
+/* 联系方式类型：邮箱只是其中一种 */
+const CONTACT = {
+  qq:     { label: 'QQ 号码（用于发送卡密与订单通知）', ph: '请输入 QQ 号，例如 3805506653', err: '请输入 5-12 位 QQ 号',       test: v => /^\d{5,12}$/.test(v) },
+  wechat: { label: '微信号（用于发送卡密与订单通知）',   ph: '请输入微信号',                  err: '请输入 5-20 位微信号',      test: v => /^[a-zA-Z][-_a-zA-Z0-9]{5,19}$/.test(v) },
+  mail:   { label: '邮箱（用于发送卡密与订单通知）',     ph: 'you@example.com',              err: '请输入正确的邮箱地址',      test: v => /^[\w.+-]+@[\w-]+(\.[\w-]+)+$/.test(v) },
+  phone:  { label: '手机号（用于发送卡密与订单通知）',   ph: '请输入手机号',                  err: '请输入正确的 11 位手机号',  test: v => /^1[3-9]\d{9}$/.test(v) },
+};
+
+let ctKey = 'qq';
+let payKey = 'alipay';
+const paysEl = document.getElementById('pays');
+const summaryEl = document.getElementById('summary');
+
+/* ---- Cap 人机验证控制器（支付确认） ---- */
+let capCheckout = { enabled: false, token: () => '', rerender: () => {} };
+
+/* 切换联系方式类型 */
+function moveCtThumb() {
+  const seg = document.getElementById('ctSeg');
+  const thumb = document.getElementById('ctThumb');
+  if (!seg || !thumb) return;
+  const act = seg.querySelector('button.active');
+  if (!act) return;
+  thumb.style.width = act.offsetWidth + 'px';
+  thumb.style.transform = 'translateX(' + act.offsetLeft + 'px)';
+}
+document.getElementById('ctSeg').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-ct]');
+  if (!btn) return;
+  ctKey = btn.dataset.ct;
+  document.querySelectorAll('#ctSeg button').forEach(b => b.classList.toggle('active', b === btn));
+  moveCtThumb();
+  const rule = CONTACT[ctKey];
+  document.getElementById('ctLabel').textContent = XJ.tr(rule.label);
+  const input = document.getElementById('contact');
+  input.placeholder = XJ.tr(rule.ph);
+  input.classList.remove('error');
+  document.getElementById('contactErr').classList.remove('show');
+});
+window.addEventListener('resize', () => requestAnimationFrame(moveCtThumb));
+
+/* POST 跳转支付：用服务端签好的参数自动提交隐藏表单（保留浏览器 UA/Referer，符合网关要求） */
+function postPayForm(url, params) {
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = url;
+  form.style.display = 'none';
+  Object.keys(params).forEach(k => {
+    const inp = document.createElement('input');
+    inp.type = 'hidden';
+    inp.name = k;
+    inp.value = params[k];
+    form.appendChild(inp);
+  });
+  document.body.appendChild(form);
+  form.submit();
+}
+
+function renderPays() {
+  paysEl.innerHTML = PAYS.map(p => `
+    <div class="pay ${p.key === payKey ? 'active' : ''}" data-pay="${p.key}">
+      <span class="pi" style="background:${p.color}">${p.emoji}</span>
+      <div><div class="pn">${p.name}</div><div class="pd">${p.desc}</div></div>
+      <span class="radio"></span>
+    </div>`).join('');
+}
+
+let appliedCoupon = null; // { code, discount, name }
+
+function renderSummary() {
+  const items = XJ.cart.all();
+  const total = XJ.cart.total();
+  const memberDisc = Number((total * (1 - ME_L.rate)).toFixed(2));
+  const afterMember = Number((total * ME_L.rate).toFixed(2));
+  const couponDisc = appliedCoupon ? Number(appliedCoupon.discount) : 0;
+  const finalTotal = Number((afterMember - couponDisc).toFixed(2));
+  summaryEl.innerHTML = `
+    <div class="section-title" style="margin-bottom:14px">商品清单</div>
+    ${items.map(it => `
+      <div class="s-item">
+        <span class="thumb" style="background:${it.color}">${it.emoji}</span>
+        <span class="n">${it.title}</span>
+        <span class="q">×${it.qty}</span>
+        <span class="p">${(it.price * it.qty).toFixed(2)}</span>
+      </div>`).join('')}
+    <div style="height:1px;background:var(--border);margin:14px 0"></div>
+    <div class="s-row"><span>商品总额（原价）</span><span class="num">${total.toFixed(2)} CNY</span></div>
+    ${ME_HAS_DISC ? `<div class="s-row"><span>${XJ.tr('会员折扣')}（${ME_L.name} ${ME_L.zhe}${XJ.tr('折')}）</span><span class="num" style="color:var(--green)">- ${memberDisc.toFixed(2)}</span></div>` : ''}
+    ${appliedCoupon ? `<div class="s-row"><span>优惠券（${appliedCoupon.name}）</span><span class="num" style="color:var(--green)">- ${couponDisc.toFixed(2)}</span></div>` : ''}
+    <div class="s-row"><span>手续费</span><span class="num">0.00 CNY</span></div>
+    <div class="s-row total"><span>应付合计</span><span class="num">${finalTotal.toFixed(2)}</span></div>
+    <button class="btn btn-primary btn-block" id="submitBtn" style="margin-top:20px">提交订单</button>
+    <label class="agree">
+      <input type="checkbox" id="agree" checked />
+      <span>我已阅读并同意 <a href="#">服务条款</a> 与 <a href="#">隐私政策</a>，数字商品一经交付不支持退款</span>
+    </label>`;
+
+  document.getElementById('submitBtn').addEventListener('click', submit);
+}
+
+async function applyCoupon() {
+  const code = document.getElementById('couponInput').value.trim();
+  const msg = document.getElementById('couponMsg');
+  if (!code) { msg.textContent = XJ.tr('请输入优惠券码'); msg.className = 'coupon-msg err'; return; }
+  msg.textContent = XJ.tr('校验中…'); msg.className = 'coupon-msg';
+  try {
+    const r = await fetch('/api/coupon/validate', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, amount: Number((XJ.cart.total() * ME_L.rate).toFixed(2)), subtotal: XJ.cart.total(), level: ME_LEVEL }),
+    });
+    const d = await r.json();
+    if (!d || !d.valid) {
+      appliedCoupon = null;
+      msg.textContent = (d && d.msg) || XJ.tr('优惠券不可用');
+      msg.className = 'coupon-msg err';
+    } else {
+      appliedCoupon = { code: d.coupon.code, discount: d.discount, name: d.coupon.name };
+      msg.textContent = XJ.tr('已应用') + '：' + d.coupon.name + '，' + XJ.tr('立减') + ' ¥' + d.discount;
+      msg.className = 'coupon-msg ok';
+    }
+    renderSummary();
+  } catch (e) {
+    msg.textContent = XJ.tr('校验失败，请稍后再试');
+    msg.className = 'coupon-msg err';
+  }
+}
+document.getElementById('couponApply').addEventListener('click', applyCoupon);
+document.getElementById('couponInput').addEventListener('keydown', e => { if (e.key === 'Enter') applyCoupon(); });
+
+paysEl.addEventListener('click', e => {
+  const el = e.target.closest('[data-pay]');
+  if (!el) return;
+  payKey = el.dataset.pay;
+  renderPays();
+});
+
+function submit() {
+  const contact = document.getElementById('contact').value.trim();
+  const input = document.getElementById('contact');
+  const err = document.getElementById('contactErr');
+  const rule = CONTACT[ctKey];
+  err.classList.remove('show');
+  input.classList.remove('error');
+  if (!rule.test(contact)) {
+    err.textContent = XJ.tr(rule.err);
+    err.classList.add('show');
+    input.classList.add('error');
+    return;
+  }
+
+  if (!document.getElementById('agree').checked) {
+    XJ.toast(XJ.tr('请先勾选同意服务条款'));
+    return;
+  }
+
+  const items = XJ.cart.all();
+  if (!items.length) { XJ.toast(XJ.tr('购物车是空的')); return; }
+
+  if (capCheckout.enabled && !capCheckout.token()) { XJ.toast(XJ.tr('请先完成人机验证')); return; }
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = XJ.tr('正在创建订单…');
+
+  const no = 'XJ' + Date.now().toString().slice(-10);
+  const order = {
+    no: no,
+    uid: (ME && ME.uid) ? ME.uid : undefined,
+    capToken: capCheckout.token(),
+    email: contact,
+    contactType: ctKey,
+    note: document.getElementById('note').value.trim(),
+    pay: PAYS.find(p => p.key === payKey).name,
+    items: items,
+    coupon: appliedCoupon ? appliedCoupon.code : undefined,
+    total: Number(XJ.cart.total().toFixed(2)),
+    time: new Date().toLocaleString('zh-CN', { hour12: false }),
+    status: 'pending',
+    cards: items.flatMap(it => Array.from({ length: Number(it.qty) || 1 }, () => `${it.title}｜${it.spec || ''}｜卡密：XJ-${Math.random().toString(36).slice(2, 10).toUpperCase()}`)),
+  };
+
+  /* 本地也存一份，离线时订单页仍可查看 */
+  const orders = JSON.parse(localStorage.getItem('xj_orders') || '[]');
+  orders.unshift(order);
+  localStorage.setItem('xj_orders', JSON.stringify(orders));
+
+  /* 交给服务端签名发起支付（密钥不下发到浏览器；折扣由服务端按原价重算） */
+  if (typeof fetch !== 'function') {
+    XJ.toast(XJ.tr('当前环境不支持在线支付，已保存为待支付订单'));
+    setTimeout(() => location.href = 'order.html?no=' + no, 800);
+    return;
+  }
+
+  fetch('/api/order', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(order) })
+    .then(r => r.json())
+    .then(data => {
+      if (!data || !data.ok) throw new Error((data && data.msg) || '下单失败');
+      /* 用服务端重算后的金额覆盖本地订单副本（折扣只在此处计算） */
+      order.originalTotal = data.originalTotal;
+      order.discount = data.discount;
+      order.coupon = data.coupon;
+      order.couponDiscount = data.couponDiscount;
+      order.total = data.total;
+      order.level = data.level;
+      const ls = JSON.parse(localStorage.getItem('xj_orders') || '[]');
+      const i = ls.findIndex(o => o.no === no);
+      if (i >= 0) { ls[i] = order; localStorage.setItem('xj_orders', JSON.stringify(ls)); }
+      return fetch('/api/pay?no=' + encodeURIComponent(no) + '&type=' + payKey);
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (!data || !data.ok) throw new Error((data && data.msg) || '下单失败');
+      XJ.toast(XJ.tr('正在跳转支付…'));
+      XJ.cart.clear();
+      /* POST 提交：服务端返回已签名参数，这里自动提交隐藏表单（网关需要浏览器 UA/Referer） */
+      if (data.payMethod === 'POST' && data.payParams) {
+        postPayForm(data.payUrl, data.payParams);
+        return;
+      }
+      setTimeout(() => { location.href = data.payUrl; }, 600);
+    })
+    .catch(err => {
+      if (capCheckout.enabled) capCheckout.rerender();
+      btn.disabled = false;
+      btn.textContent = XJ.tr('提交订单');
+      XJ.toast((err && err.message) || XJ.tr('支付服务不可用，已保存为待支付订单'));
+      setTimeout(() => location.href = 'order.html?no=' + no, 900);
+    });
+}
+
+renderPays();
+renderSummary();
+moveCtThumb();
+
+/* 语言切换时重渲结算页 */
+document.addEventListener('xj:langchange', () => { renderPays(); renderSummary(); moveCtThumb(); XJ.retranslate(); });
+
+/* 已登录用户按"默认联系方式"预填 */
+try {
+  const u = JSON.parse(localStorage.getItem('xj_user') || 'null');
+  if (u) {
+    const ct = u.contactType || 'mail';
+    const segBtn = document.querySelector('#ctSeg button[data-ct="' + ct + '"]');
+    if (segBtn) segBtn.click();
+    const val = (ct === 'qq') ? (u.qq || '') : (ct === 'wechat') ? (u.wechat || '') : (ct === 'phone') ? (u.phone || '') : (u.mail || '');
+    document.getElementById('contact').value = val;
+  }
+} catch (e) {}
+
+XJ.guardBanned();
+XJ.init({ active: 'home' });
+/* 支付确认：挂载 Cap 验证组件（仅服务端启用时渲染） */
+if (window.CapGuard) CapGuard.mount(document.getElementById('capCheckout'), function () {}).then(function (c) { capCheckout = c; });
+</script>
+</body>
+</html>

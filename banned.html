@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>账户已封禁 · XJ Store</title>
+<script src="assets/head.js"></script>
+<link rel="stylesheet" href="assets/base.css" />
+<style>
+  body { display: block; }
+  .ban-wrap {
+    min-height: 100vh; display: grid; place-items: center; padding: 24px;
+    background: radial-gradient(1200px 600px at 50% -10%, var(--primary-soft), transparent 70%);
+  }
+  .ban-card {
+    width: 100%; max-width: 440px; text-align: center; padding: 44px 38px 40px;
+  }
+  .ban-ico {
+    width: 74px; height: 74px; border-radius: 20px; margin: 0 auto 22px;
+    background: linear-gradient(135deg, #f59e0b, #ef4444);
+    display: grid; place-items: center; color: #fff;
+    box-shadow: 0 12px 30px rgba(239, 68, 68, .35);
+  }
+  .ban-ico svg { width: 34px; height: 34px; }
+  .ban-card h1 { font-size: 23px; font-weight: 800; margin: 0 0 12px; }
+  .ban-card p { color: var(--text-2); font-size: 14.5px; line-height: 1.8; margin: 0 0 10px; }
+  .ban-rule {
+    text-align: left; background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px 16px; margin: 20px 0 26px; font-size: 13.5px; color: var(--text-2); line-height: 1.9;
+  }
+  .ban-rule b { color: var(--text); }
+  .ban-actions { display: flex; flex-direction: column; gap: 12px; }
+  .ban-user { font-size: 13px; color: var(--text-3); margin-bottom: 18px; }
+  .ban-user b { color: var(--text-2); }
+  .brand-mini { display: flex; align-items: center; justify-content: center; gap: 9px; margin-bottom: 26px; color: var(--text-2); font-weight: 700; }
+  .brand-mini .brand-logo { width: 28px; height: 28px; font-size: 15px; }
+</style>
+</head>
+<body>
+
+<div class="ban-wrap">
+  <div class="card ban-card anim-up">
+    <div class="brand-mini"><span class="brand-logo">X</span> XJ Store</div>
+    <div class="ban-ico">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l8 4v6c0 4.5-3.4 7.4-8 8-4.6-.6-8-3.5-8-8V7z"/><path d="m9 12 2 2 4-4"/></svg>
+    </div>
+    <h1>账户已被封禁</h1>
+    <p>您的账户因违反相关规定已被封禁，当前无法浏览商店、下单或查看个人中心。</p>
+    <p class="ban-user">当前账户：<b id="banName">—</b></p>
+    <div class="ban-rule">
+      <div>· 封禁期间 <b>仅可切换账户</b>，无法访问商店内容</div>
+      <div>· 如需继续使用，请切换至其他正常账户登录</div>
+      <div>· 若有疑问，请联系客服邮箱 <b>3805506653@qq.com</b></div>
+    </div>
+    <div class="ban-actions">
+      <button class="btn btn-primary btn-block" id="switchBtn">切换账户</button>
+    </div>
+  </div>
+</div>
+
+<script src="assets/base.js"></script>
+<script>
+  (function () {
+    try {
+      var u = XJ.user();
+      if (u && u.name) document.getElementById('banName').textContent = u.name + (u.mail ? '（' + u.mail + '）' : '');
+    } catch (e) {}
+
+    document.getElementById('switchBtn').addEventListener('click', function () {
+      // 只做一件事：清空当前会员会话，跳到登录页切换账户
+      try { localStorage.removeItem('xj_user'); } catch (e) {}
+      location.href = 'login.html';
+    });
+  })();
+</script>
+</body>
+</html>

@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>批量账户管理 · XJ Store</title>
+<script src="assets/head.js"></script>
+<link rel="stylesheet" href="assets/base.css" />
+<style>
+  .wrap { width: 100%; max-width: min(var(--page-w), 100% - 32px); margin: 0 auto; padding: 24px 22px 0; }
+
+  /* 门禁 */
+  .gate { min-height: calc(100vh - var(--header-h) - 200px); display: grid; place-items: center; padding: 40px 20px; }
+  .gate-card { width: 100%; max-width: 380px; padding: 34px 32px 30px; text-align: center; }
+  .gate-ico {
+    width: 58px; height: 58px; border-radius: 16px; margin: 0 auto 18px;
+    background: linear-gradient(135deg, var(--primary), #7ab0ff);
+    display: grid; place-items: center; color: #fff;
+    box-shadow: 0 8px 22px rgba(43, 109, 246, .35);
+  }
+  .gate-ico svg { width: 26px; height: 26px; }
+  .gate h1 { font-size: 22px; font-weight: 800; margin: 0 0 6px; }
+  .gate p { color: var(--text-3); font-size: 13px; margin: 0 0 24px; }
+  .gate-err { color: var(--red); font-size: 13px; margin-top: 12px; display: none; }
+  .gate-err.show { display: block; }
+
+  .admin-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; padding: 6px 2px 18px; }
+  .admin-title { display: flex; align-items: center; gap: 9px; font-size: 22px; font-weight: 800; }
+  .admin-title::before { content: ""; width: 3px; height: 20px; border-radius: 2px; background: var(--primary); }
+
+  .panel-card { padding: 22px 24px 24px; }
+  .panel-card .section-title { margin-bottom: 18px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th { text-align: left; font-size: 12.5px; font-weight: 600; color: var(--text-3); padding: 0 10px 12px; border-bottom: 1px solid var(--border); }
+  td { padding: 12px 10px; border-bottom: 1px solid var(--border); color: var(--text-2); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  .td-name { color: var(--text); font-weight: 600; }
+  .row-actions { display: flex; gap: 8px; justify-content: flex-end; }
+  .mini { padding: 5px 12px; border-radius: 7px; font-size: 12.5px; background: var(--surface-2); color: var(--text-2); transition: all .15s; cursor: pointer; border: none; }
+  .mini:hover { background: var(--primary-soft); color: var(--primary); }
+  .mini.danger:hover { background: #fff1f0; color: var(--red); }
+  .thumb-sm { width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; font-size: 17px; }
+
+  .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 0 18px; }
+
+  /* 弹窗 */
+  .mask {
+    position: fixed; inset: 0; z-index: 120; background: rgba(15, 18, 24, .5);
+    display: none; align-items: center; justify-content: center; padding: 24px;
+    backdrop-filter: blur(3px);
+  }
+  .mask.show { display: flex; animation: fadeIn .2s ease; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .modal {
+    width: 100%; max-width: 600px; max-height: 88vh; overflow-y: auto;
+    background: var(--surface); border-radius: var(--radius-lg); padding: 26px 28px 24px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, .3); animation: popIn .22s cubic-bezier(.22,.61,.36,1);
+  }
+  @keyframes popIn { from { opacity: 0; transform: translateY(14px) scale(.98); } to { opacity: 1; transform: none; } }
+  .modal h3 { margin: 0 0 20px; font-size: 18px; font-weight: 700; }
+  .modal-foot { display: flex; gap: 10px; justify-content: flex-end; margin-top: 22px; }
+
+  /* 搜索 / 工具条 */
+  .search-box { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 0 14px; height: 42px; max-width: 320px; }
+  .search-box svg { width: 16px; height: 16px; color: var(--text-3); }
+  .search-box input { flex: 1; border: none; outline: none; background: none; font-size: 14px; height: 100%; }
+  .toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .select-sm { height: 42px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); padding: 0 12px; font-size: 14px; color: var(--text); outline: none; }
+
+  .perm-tags { display: flex; gap: 5px; flex-wrap: wrap; }
+  .perm-tags .pt { font-size: 11.5px; padding: 3px 8px; border-radius: 6px; background: var(--primary-soft); color: var(--primary); }
+
+  .empty-row { text-align: center; padding: 40px 0; color: var(--text-3); }
+
+  /* 会员套餐配置 */
+  .plans { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; }
+  .plan { padding: 14px 16px; border: 1.5px solid var(--border); border-radius: var(--radius); background: var(--surface-2); }
+  .plan.off { opacity: .55; }
+  .plan .pl-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+  .plan .pl-name { font-size: 14px; font-weight: 700; color: #fff; padding: 3px 10px; border-radius: 7px; }
+  .plan .pl-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .plan .pl-row label { font-size: 12.5px; color: var(--text-3); flex: 0 0 52px; }
+  .plan .pl-row .input { height: 34px; font-size: 13px; padding: 0 10px; }
+  .plan .pl-price .input { flex: 1; }
+  .plan .pl-foot { display: flex; gap: 8px; margin-top: 10px; }
+
+  .lv-badge { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px; border-radius: 999px; color: #fff; font-size: 12px; font-weight: 600; }
+  .exp-cell { font-size: 12.5px; color: var(--text-3); }
+  .exp-cell.soon { color: var(--red); }
+
+  /* 批量操作条 */
+  .batch-bar {
+    position: sticky; top: calc(var(--header-h) + 8px); z-index: 40;
+    display: none; align-items: center; gap: 12px; flex-wrap: wrap;
+    background: var(--primary); color: #fff; border-radius: var(--radius);
+    padding: 12px 16px; margin-bottom: 16px; box-shadow: var(--shadow-card);
+  }
+  .batch-bar.show { display: flex; }
+  .batch-bar .bc { font-weight: 700; font-size: 14px; }
+  .batch-bar .btn { background: rgba(255,255,255,.16); color: #fff; border-color: transparent; }
+  .batch-bar .btn:hover { background: rgba(255,255,255,.28); }
+  .batch-bar .btn-ghost { background: transparent; border: 1px solid rgba(255,255,255,.4); }
+
+  /* 批量弹窗内分区 */
+  .ba-sec { border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 14px; }
+  .ba-sec .ba-t { font-weight: 700; font-size: 14px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .ba-sec .ba-t::before { content: ""; width: 3px; height: 15px; border-radius: 2px; background: var(--primary); }
+  .ba-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .hint { font-size: 12.5px; color: var(--text-3); margin-top: 6px; line-height: 1.7; }
+  .select-inline { height: 40px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); padding: 0 12px; font-size: 14px; color: var(--text); outline: none; }
+  .input.w120 { flex: 0 0 120px; }
+  .input.w80 { flex: 0 0 110px; }
+
+  .alert.ok { background: #f6ffed; border: 1px solid #b7eb8f; color: #389e0d; }
+  html[data-theme="dark"] .alert.ok { background: rgba(18, 161, 80, .12); border-color: rgba(18, 161, 80, .38); color: #5fd39a; }
+
+  html.mobile-layout { .wrap { padding: 16px 14px 0; } }
+</style>
+</head>
+<body>
+
+<div id="header"></div>
+
+<!-- 登录门禁 -->
+<div id="gate" class="gate" style="display:none">
+  <div class="card gate-card anim-up">
+    <div class="gate-ico">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+    </div>
+    <h1>批量账户管理</h1>
+    <p>仅限管理员账号进入</p>
+    <div class="field">
+      <input class="input" id="gUser" placeholder="管理员账号" autocomplete="username" />
+    </div>
+    <div class="field">
+      <input class="input" id="gPass" type="password" placeholder="密码" autocomplete="current-password" />
+    </div>
+    <button class="btn btn-primary btn-block" id="gLogin">登 录</button>
+    <div class="gate-err" id="gErr"></div>
+  </div>
+</div>
+
+<!-- 主体 -->
+<div id="app" class="wrap" style="display:none">
+  <div class="admin-head">
+    <div class="admin-title">批量账户管理</div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <span class="tag blue" id="who"></span>
+      <a class="btn btn-outline btn-sm" href="admin.html">返回控制台</a>
+      <button class="btn btn-outline btn-sm" id="logoutBtn">退出登录</button>
+    </div>
+  </div>
+
+  <!-- 批量操作条 -->
+  <div class="batch-bar" id="batchBar">
+    <span class="bc" id="batchCount">已选 0 项</span>
+    <button class="btn btn-sm" id="openBatch">批量操作</button>
+    <button class="btn btn-ghost btn-sm" id="invertSel">反选</button>
+    <button class="btn btn-ghost btn-sm" id="clearSel">清空选择</button>
+  </div>
+
+  <div class="card panel-card anim-up">
+    <div class="section-title" style="justify-content:space-between">
+      <span style="display:flex;align-items:center;gap:9px">会员账户（<span id="acctTotal">0</span>）</span>
+      <span class="hint" style="margin:0">折扣与会员等级均在下单计价时由服务端计算，列表仅展示原价。</span>
+    </div>
+    <div class="toolbar">
+      <div class="search-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>
+        <input id="acctSearch" placeholder="搜索用户名 / 邮箱 / 手机" />
+      </div>
+      <button class="btn btn-primary btn-sm" id="acctSearchBtn">搜索</button>
+      <select class="select-sm" id="acctFilter">
+        <option value="">全部状态</option>
+        <option value="0">仅正常</option>
+        <option value="1">仅封禁</option>
+      </select>
+      <button class="btn btn-sm" id="acctRefresh">刷新</button>
+    </div>
+
+    <table>
+      <thead><tr>
+        <th style="width:42px"><input type="checkbox" id="selAll" /></th>
+        <th style="width:48px">ID</th><th>用户名</th><th>邮箱</th>
+        <th style="width:120px">等级</th><th style="width:110px">有效期</th><th style="width:80px">积分</th>
+        <th style="width:90px">状态</th><th>权限</th><th style="width:110px">操作</th>
+      </tr></thead>
+      <tbody id="acctBody"></tbody>
+    </table>
+    <div class="empty-row" id="acctEmpty" style="display:none">没有匹配的账户</div>
+  </div>
+
+  <!-- 会员套餐配置 -->
+  <div class="card panel-card anim-up" style="margin-top:18px">
+    <div class="section-title" style="justify-content:space-between">
+      <span>会员套餐（LVIP / VIP / SVIP 购买）</span>
+      <span class="hint" style="margin:0">套餐价格与时长即用户购买页展示的内容，保存后立即生效。</span>
+    </div>
+    <div class="plans" id="planBox"></div>
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button class="btn btn-primary btn-sm" id="savePlans">保存套餐配置</button>
+      <button class="btn btn-outline btn-sm" id="resetPlans">恢复默认套餐</button>
+      <span class="hint" id="planMsg" style="margin:0"></span>
+    </div>
+  </div>
+</div>
+
+<!-- 通用弹窗 -->
+<div class="mask" id="mask">
+  <div class="modal">
+    <h3 id="mTitle">编辑</h3>
+    <div id="mBody"></div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" id="mCancel">关闭</button>
+    </div>
+  </div>
+</div>
+
+<div id="footer"></div>
+<button class="to-top" id="toTop" title="回到顶部"></button>
+
+<script src="assets/base.js"></script>
+<script>
+const LEVEL_OPTIONS = [
+  { v: '', name: '未设置' }, { v: 'none', name: '无折扣' }, { v: 'lvip', name: 'LVIP(7折)' },
+  { v: 'vip', name: 'VIP(4.5折)' }, { v: 'svip', name: 'SVIP(1.5折)' },
+];
+const PERMS = ['buy', 'comment', 'view', 'ai_admin'];
+function permName(p) { return { buy: '可购买', comment: '可评论', view: '可浏览', ai_admin: 'XJ AI 最高权限' }[p] || p; }
+
+let TOKEN = sessionStorage.getItem('xj_admin_token') || '';
+let LIST = [];
+let LEVELS = {};
+let selected = new Set();
+
+const gate = document.getElementById('gate');
+const app = document.getElementById('app');
+const mask = document.getElementById('mask');
+
+/* ---------- 请求封装 ---------- */
+async function api(url, opts) {
+  opts = opts || {};
+  opts.headers = Object.assign({ 'x-admin-token': TOKEN }, opts.headers || {});
+  if (opts.body) opts.headers['Content-Type'] = 'application/json';
+  const r = await fetch(url, opts);
+  const j = await r.json().catch(() => ({ ok: false, msg: '服务返回异常' }));
+  if (r.status === 401 || r.status === 403) {
+    if (j.msg) XJ.toast(j.msg);
+    if (r.status === 401) logout();
+    throw new Error(j.msg || '未授权');
+  }
+  return j;
+}
+function logout() {
+  sessionStorage.removeItem('xj_admin_token');
+  TOKEN = '';
+  app.style.display = 'none';
+  gate.style.display = '';
+}
+function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
+
+/* ---------- 弹窗 ---------- */
+function showModal(title, html) {
+  document.getElementById('mTitle').textContent = title;
+  document.getElementById('mBody').innerHTML = html;
+  mask.classList.add('show');
+}
+document.getElementById('mCancel').addEventListener('click', () => mask.classList.remove('show'));
+mask.addEventListener('click', e => { if (e.target === mask) mask.classList.remove('show'); });
+
+/* ---------- 登录 ---------- */
+document.getElementById('gLogin').addEventListener('click', async () => {
+  const user = document.getElementById('gUser').value.trim();
+  const pass = document.getElementById('gPass').value;
+  const err = document.getElementById('gErr');
+  err.classList.remove('show');
+  if (!user || !pass) { err.textContent = '请输入账号和密码'; err.classList.add('show'); return; }
+  try {
+    const r = await fetch('/api/admin/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user, pass }) });
+    const j = await r.json();
+    if (!j.ok) { err.textContent = j.msg || '登录失败'; err.classList.add('show'); return; }
+    TOKEN = j.token;
+    sessionStorage.setItem('xj_admin_token', TOKEN);
+    await enter();
+  } catch (e) { err.textContent = '无法连接服务，请确认服务已启动'; err.classList.add('show'); }
+});
+document.getElementById('gPass').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('gLogin').click(); });
+document.getElementById('logoutBtn').addEventListener('click', () => { logout(); XJ.toast('已退出'); });
+
+/* ---------- 进入 ---------- */
+async function enter() {
+  let st;
+  try { st = await api('/api/admin/state'); }
+  catch (e) { logout(); return; }
+  if (!st.ok) { logout(); return; }
+  LEVELS = st.levels || {};
+  document.getElementById('who').textContent = '管理员：' + st.admin.user;
+  gate.style.display = 'none';
+  app.style.display = '';
+  bindToolbars();
+  await loadAccounts();
+  await loadPlans();
+}
+
+/* ---------- 拉取账户 ---------- */
+async function loadAccounts() {
+  const q = document.getElementById('acctSearch').value.trim();
+  const banned = document.getElementById('acctFilter').value;
+  let url = '/api/admin/accounts?q=' + encodeURIComponent(q);
+  if (banned) url += '&banned=' + banned;
+  let j = { list: [], total: 0 };
+  try { j = await api(url); } catch (e) {}
+  LIST = j.list || [];
+  // 清理已不存在的选中项
+  const ids = new Set(LIST.map(a => a.id));
+  selected.forEach(id => { if (!ids.has(id)) selected.delete(id); });
+  document.getElementById('acctTotal').textContent = j.total || LIST.length;
+  const body = document.getElementById('acctBody');
+  document.getElementById('acctEmpty').style.display = LIST.length ? 'none' : '';
+  body.innerHTML = LIST.map(a => {
+    const lv = LEVELS[a.level] || LEVELS[''];
+    const lvName = a.level ? (lv ? lv.name : a.level) : '未设置';
+    const exp = a.vipExpireAt || '';
+    const soon = exp && (new Date(exp + 'T23:59:59').getTime() - Date.now()) < 7 * 86400000;
+    return `<tr data-id="${a.id}">
+      <td><input type="checkbox" class="sel" data-id="${a.id}" ${selected.has(a.id) ? 'checked' : ''} /></td>
+      <td>${a.id}</td>
+      <td class="td-name">${esc(a.name)}</td>
+      <td>${esc(a.mail)}</td>
+      <td><span class="lv-badge" style="background:${(lv && lv.color) || '#8f959e'}">${lvName}</span></td>
+      <td><span class="exp-cell ${soon ? 'soon' : ''}">${exp || '—'}</span></td>
+      <td>${a.point}</td>
+      <td>${a.banned ? '<span class="tag red">已封禁</span>' : '<span class="tag green">正常</span>'}</td>
+      <td><div class="perm-tags">${(a.perms || []).map(p => `<span class="pt">${permName(p)}</span>`).join('') || '<span style="color:var(--text-3)">—</span>'}</div></td>
+      <td><button class="mini" data-grant="${a.id}">开通会员</button></td>
+    </tr>`;
+  }).join('');
+
+  // 绑定选择
+  body.querySelectorAll('.sel').forEach(cb => cb.addEventListener('change', () => {
+    const id = Number(cb.dataset.id);
+    if (cb.checked) selected.add(id); else selected.delete(id);
+    syncBar();
+  }));
+  // 单账户开通会员
+  body.querySelectorAll('[data-grant]').forEach(b => b.addEventListener('click', () => openGrantModal(b.dataset.grant)));
+  syncSelAll();
+  syncBar();
+}
+
+function syncSelAll() {
+  const cb = document.getElementById('selAll');
+  const visible = LIST.map(a => a.id);
+  const allSel = visible.length > 0 && visible.every(id => selected.has(id));
+  cb.checked = allSel;
+  cb.indeterminate = !allSel && visible.some(id => selected.has(id));
+}
+function syncBar() {
+  const bar = document.getElementById('batchBar');
+  if (selected.size > 0) { bar.classList.add('show'); document.getElementById('batchCount').textContent = '已选 ' + selected.size + ' 项'; }
+  else bar.classList.remove('show');
+}
+
+/* ---------- 工具条 ---------- */
+function bindToolbars() {
+  document.getElementById('acctSearchBtn').addEventListener('click', loadAccounts);
+  document.getElementById('acctSearch').addEventListener('keydown', e => { if (e.key === 'Enter') loadAccounts(); });
+  document.getElementById('acctFilter').addEventListener('change', loadAccounts);
+  document.getElementById('acctRefresh').addEventListener('click', loadAccounts);
+
+  document.getElementById('selAll').addEventListener('change', e => {
+    LIST.forEach(a => { if (e.target.checked) selected.add(a.id); else selected.delete(a.id); });
+    loadAccounts();
+  });
+  document.getElementById('invertSel').addEventListener('click', () => {
+    LIST.forEach(a => { if (selected.has(a.id)) selected.delete(a.id); else selected.add(a.id); });
+    loadAccounts();
+  });
+  document.getElementById('clearSel').addEventListener('click', () => { selected.clear(); loadAccounts(); });
+  document.getElementById('openBatch').addEventListener('click', openBatchModal);
+}
+
+/* ---------- 批量操作弹窗 ---------- */
+function openBatchModal() {
+  if (selected.size === 0) { XJ.toast('请先勾选要操作的账户'); return; }
+  const lvOpts = LEVEL_OPTIONS.map(o => `<option value="${o.v}">${o.name}</option>`).join('');
+  const permOpts = PERMS.map(p => `<option value="${p}">${permName(p)}</option>`).join('');
+  showModal('批量操作 · 已选 ' + selected.size + ' 项', `
+    <div class="ba-sec">
+      <div class="ba-t">设置会员等级</div>
+      <div class="ba-row">
+        <select class="select-inline" id="baLevel">${lvOpts}</select>
+        <button class="btn btn-primary btn-sm" id="baLevelBtn">应用等级</button>
+      </div>
+    </div>
+
+    <div class="ba-sec">
+      <div class="ba-t">积分调整</div>
+      <div class="ba-row">
+        <select class="select-inline" id="baPointOp">
+          <option value="set">设为</option>
+          <option value="delta">增减</option>
+        </select>
+        <input class="input w120" id="baPointVal" type="number" value="0" />
+        <button class="btn btn-primary btn-sm" id="baPointBtn">应用积分</button>
+      </div>
+      <div class="hint">「增减」可填负数扣减，积分最低为 0。</div>
+    </div>
+
+    <div class="ba-sec">
+      <div class="ba-t">权限管理</div>
+      <div class="ba-row">
+        <select class="select-inline" id="baPerm">${permOpts}</select>
+        <button class="btn btn-primary btn-sm" id="baPermAdd">添加权限</button>
+        <button class="btn btn-outline btn-sm" id="baPermRm">移除权限</button>
+      </div>
+    </div>
+
+    <div class="ba-sec">
+      <div class="ba-t">封禁管理</div>
+      <div class="ba-row">
+        <button class="btn btn-sm" id="baBan">封禁选中</button>
+        <button class="btn btn-outline btn-sm" id="baUnban">解封选中</button>
+        <span class="hint" style="margin:0">封禁后该账户将无法下单与登录。</span>
+      </div>
+    </div>
+
+    <div class="ba-sec">
+      <div class="ba-t">批量开通会员</div>
+      <div class="ba-row">
+        <select class="select-inline" id="baGrantLevel">${lvOpts}</select>
+        <input class="input w120" id="baGrantDays" type="number" min="0" value="30" />
+        <span style="font-size:12.5px;color:var(--text-3)">天</span>
+        <button class="btn btn-primary btn-sm" id="baGrantBtn">批量开通</button>
+      </div>
+      <div class="hint">为选中的账户开通限时会员，时长叠加到各自原到期日之后。</div>
+    </div>
+    <div class="alert ok" id="baMsg" style="display:none"></div>
+  `);
+
+  const ids = Array.from(selected);
+  const finish = async (res) => {
+    const msg = document.getElementById('baMsg');
+    if (res.ok) { msg.style.display = ''; msg.textContent = '已更新 ' + (res.updated || ids.length) + ' 个账户'; XJ.toast('批量操作成功'); await loadAccounts(); }
+    else { msg.style.display = ''; msg.style.background = '#fff1f0'; msg.style.color = 'var(--red)'; msg.style.borderColor = '#ffccc7'; msg.textContent = res.msg || '操作失败'; }
+  };
+
+  document.getElementById('baLevelBtn').addEventListener('click', async () => {
+    await finish(await api('/api/admin/accounts/batch', { method: 'POST', body: JSON.stringify({ ids, action: { level: document.getElementById('baLevel').value } }) }));
+  });
+  document.getElementById('baPointBtn').addEventListener('click', async () => {
+    const op = document.getElementById('baPointOp').value;
+    const val = Number(document.getElementById('baPointVal').value) || 0;
+    const action = op === 'set' ? { pointSet: val } : { pointDelta: val };
+    await finish(await api('/api/admin/accounts/batch', { method: 'POST', body: JSON.stringify({ ids, action }) }));
+  });
+  document.getElementById('baPermAdd').addEventListener('click', async () => {
+    const p = document.getElementById('baPerm').value;
+    await finish(await api('/api/admin/accounts/batch', { method: 'POST', body: JSON.stringify({ ids, action: { permsAdd: [p] } }) }));
+  });
+  document.getElementById('baPermRm').addEventListener('click', async () => {
+    const p = document.getElementById('baPerm').value;
+    await finish(await api('/api/admin/accounts/batch', { method: 'POST', body: JSON.stringify({ ids, action: { permsRemove: [p] } }) }));
+  });
+  document.getElementById('baBan').addEventListener('click', async () => {
+    await finish(await api('/api/admin/accounts/batch', { method: 'POST', body: JSON.stringify({ ids, action: { banned: true } }) }));
+  });
+  document.getElementById('baUnban').addEventListener('click', async () => {
+    await finish(await api('/api/admin/accounts/batch', { method: 'POST', body: JSON.stringify({ ids, action: { banned: false } }) }));
+  });
+
+  /* 批量开通会员：逐个调用开通接口，累加天数并叠加到期日 */
+  document.getElementById('baGrantBtn').addEventListener('click', async () => {
+    const level = document.getElementById('baGrantLevel').value;
+    const days = Number(document.getElementById('baGrantDays').value) || 0;
+    const msg = document.getElementById('baMsg');
+    let ok = 0, err = '';
+    for (const id of ids) {
+      try {
+        const r = await api('/api/admin/member/grant', { method: 'POST', body: JSON.stringify({ id, level, days, mode: 'timed' }) });
+        if (r.ok) ok++; else err = r.msg || '部分账户开通失败';
+      } catch (e) { err = e.message || '部分账户开通失败'; }
+    }
+    if (ok) { msg.style.display = ''; msg.textContent = '已为 ' + ok + ' 个账户开通会员' + (err ? '（' + err + '）' : ''); XJ.toast('批量开通完成'); await loadAccounts(); }
+    else { msg.style.display = ''; msg.style.background = '#fff1f0'; msg.style.color = 'var(--red)'; msg.style.borderColor = '#ffccc7'; msg.textContent = err || '开通失败'; }
+  });
+}
+
+/* ---------- 会员套餐配置 ---------- */
+let PLANS = [];
+async function loadPlans() {
+  let j = { plans: [] };
+  try { j = await api('/api/admin/member/plans'); } catch (e) {}
+  PLANS = j.plans || [];
+  renderPlans();
+}
+function renderPlans() {
+  const box = document.getElementById('planBox');
+  if (!box) return;
+  box.innerHTML = PLANS.map((p, i) => {
+    const lv = LEVELS[p.level] || { name: p.level, color: '#8f959e' };
+    return `<div class="plan ${p.active === false ? 'off' : ''}" data-i="${i}">
+      <div class="pl-top">
+        <span class="pl-name" style="background:${lv.color}">${esc(lv.name)}</span>
+        <label style="font-size:12.5px;color:var(--text-3);display:flex;align-items:center;gap:5px;cursor:pointer">
+          <input type="checkbox" class="p-active" ${p.active === false ? '' : 'checked'} /> 上架
+        </label>
+      </div>
+      <div class="pl-row"><label>名称</label><input class="input p-name" value="${esc(p.name || '')}" /></div>
+      <div class="pl-row"><label>时长</label><input class="input p-days" type="number" min="1" max="3650" value="${p.days}" /><span style="font-size:12.5px;color:var(--text-3)">天</span></div>
+      <div class="pl-row pl-price"><label>价格</label><input class="input p-price" type="number" min="0" step="0.01" value="${p.price}" /><span style="font-size:12.5px;color:var(--text-3)">CNY</span></div>
+      <div class="pl-foot">
+        <span class="hint" style="margin:0;flex:1">标识：${esc(p.id)}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+function collectPlans() {
+  return Array.from(document.querySelectorAll('#planBox .plan')).map(el => {
+    const i = Number(el.dataset.i);
+    const src = PLANS[i] || {};
+    return {
+      id: src.id,
+      level: src.level,
+      name: el.querySelector('.p-name').value.trim(),
+      days: Number(el.querySelector('.p-days').value) || 0,
+      price: Number(el.querySelector('.p-price').value) || 0,
+      active: el.querySelector('.p-active').checked,
+      desc: src.desc || '',
+    };
+  });
+}
+document.getElementById('savePlans').addEventListener('click', async () => {
+  const msg = document.getElementById('planMsg');
+  try {
+    const r = await api('/api/admin/member/plans', { method: 'POST', body: JSON.stringify({ plans: collectPlans() }) });
+    if (!r.ok) throw new Error(r.msg || '保存失败');
+    PLANS = r.plans || [];
+    renderPlans();
+    msg.textContent = '已保存并立即生效（' + PLANS.length + ' 个套餐）';
+    msg.style.color = 'var(--green)';
+  } catch (e) {
+    msg.textContent = e.message || '保存失败';
+    msg.style.color = 'var(--red)';
+  }
+});
+document.getElementById('resetPlans').addEventListener('click', async () => {
+  if (!confirm('恢复默认套餐将覆盖当前所有套餐配置，确定继续？')) return;
+  const msg = document.getElementById('planMsg');
+  try {
+    const r = await api('/api/admin/member/plans', { method: 'POST', body: JSON.stringify({ plans: null }) });
+    if (!r.ok) throw new Error(r.msg || '恢复失败');
+    PLANS = r.plans || [];
+    renderPlans();
+    msg.textContent = '已恢复默认套餐';
+    msg.style.color = 'var(--green)';
+  } catch (e) {
+    msg.textContent = e.message || '恢复失败';
+    msg.style.color = 'var(--red)';
+  }
+});
+
+/* ---------- 单账户开通会员 ---------- */
+function openGrantModal(id) {
+  const acct = LIST.find(a => String(a.id) === String(id));
+  if (!acct) { XJ.toast('账户不存在'); return; }
+  const lvOpts = LEVEL_OPTIONS.map(o => `<option value="${o.v}" ${o.v === acct.level ? 'selected' : ''}>${o.name}</option>`).join('');
+  showModal('开通会员 · ' + acct.name, `
+    <div class="ba-sec">
+      <div class="ba-t">会员等级</div>
+      <div class="ba-row">
+        <select class="select-inline" id="gLevel">${lvOpts}</select>
+        <select class="select-inline" id="gMode">
+          <option value="timed">限时（到期失效）</option>
+          <option value="permanent">永久</option>
+        </select>
+      </div>
+    </div>
+    <div class="ba-sec">
+      <div class="ba-t">有效时长</div>
+      <div class="ba-row">
+        <input class="input w120" id="gDays" type="number" min="0" value="30" />
+        <span class="hint" style="margin:0">天（限时模式生效；未到期的会员会在原到期日上叠加）</span>
+      </div>
+    </div>
+    <div class="alert" id="gMsg" style="display:none"></div>
+  `);
+  document.getElementById('gLevel').addEventListener('change', e => {
+    const m = document.getElementById('gMode');
+    if (e.target.value === '' || e.target.value === 'none') m.value = 'permanent';
+  });
+  const ok = document.createElement('button');
+  ok.className = 'btn btn-primary';
+  ok.textContent = '确认开通';
+  ok.addEventListener('click', async () => {
+    const msg = document.getElementById('gMsg');
+    try {
+      const r = await api('/api/admin/member/grant', {
+        method: 'POST',
+        body: JSON.stringify({
+          id: acct.id,
+          level: document.getElementById('gLevel').value,
+          days: Number(document.getElementById('gDays').value) || 0,
+          mode: document.getElementById('gMode').value,
+        }),
+      });
+      if (!r.ok) throw new Error(r.msg || '开通失败');
+      msg.style.display = '';
+      msg.className = 'alert ok';
+      msg.textContent = '已开通：' + (r.grant ? r.grant.name + '，有效期至 ' + r.grant.expireAt : '永久会员');
+      XJ.toast('会员已开通');
+      await loadAccounts();
+    } catch (e) {
+      msg.style.display = '';
+      msg.className = 'alert';
+      msg.style.background = '#fff1f0';
+      msg.style.color = 'var(--red)';
+      msg.style.borderColor = '#ffccc7';
+      msg.textContent = e.message || '开通失败';
+    }
+  });
+  document.getElementById('mBody').appendChild(ok);
+}
+
+/* ---------- 启动 ---------- */
+if (TOKEN) enter(); else gate.style.display = '';
+XJ.init({ active: 'admin' });
+</script>
+</body>
+</html>

@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>登录 · XJ Store</title>
+<script src="assets/head.js"></script>
+<link rel="stylesheet" href="assets/base.css" />
+<style>
+  body { display: block; }
+  .auth {
+    min-height: calc(100vh - var(--header-h));
+    display: grid; grid-template-columns: 1.05fr 1fr;
+  }
+
+  /* 左侧品牌区 */
+  .side {
+    position: relative; overflow: hidden; color: #fff;
+    background: linear-gradient(150deg, #1e3a8a 0%, #2b6df6 45%, #5b9bff 100%);
+    padding: 60px 56px; display: flex; flex-direction: column; justify-content: center;
+  }
+  .side::before, .side::after {
+    content: ""; position: absolute; border-radius: 50%;
+    background: rgba(255, 255, 255, .1); animation: blob 14s ease-in-out infinite;
+  }
+  .side::before { width: 320px; height: 320px; top: -90px; right: -70px; }
+  .side::after { width: 240px; height: 240px; bottom: -70px; left: -60px; animation-delay: -6s; }
+  @keyframes blob {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(24px, -18px) scale(1.08); }
+    66% { transform: translate(-18px, 20px) scale(.95); }
+  }
+  .side-inner { position: relative; z-index: 1; }
+  .side h2 { font-size: 30px; font-weight: 800; margin: 0 0 14px; line-height: 1.35; }
+  .side p { font-size: 14.5px; line-height: 1.8; opacity: .9; margin: 0 0 32px; }
+  .feat { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 18px; }
+  .feat .ico {
+    width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0;
+    background: rgba(255, 255, 255, .18); display: grid; place-items: center;
+  }
+  .feat .ico svg { width: 17px; height: 17px; }
+  .feat .t { font-size: 14.5px; font-weight: 600; margin-bottom: 3px; }
+  .feat .d { font-size: 13px; opacity: .82; line-height: 1.6; }
+
+  /* 右侧表单区 */
+  .panel { display: flex; align-items: center; justify-content: center; padding: 48px 40px; background: var(--bg); }
+  .form-card { width: 100%; max-width: 380px; }
+
+  .tabs { position: relative; display: flex; gap: 4px; background: var(--surface); padding: 4px; border-radius: 999px; margin-bottom: 26px; }
+  .tabs button {
+    position: relative; z-index: 2; flex: 1; height: 36px; border-radius: 999px; font-size: 14px; color: var(--text-2);
+    background: transparent; border: none; cursor: pointer; transition: color .22s;
+  }
+  .tabs button.active { color: #fff; font-weight: 600; }
+  .tabs .tab-indicator {
+    position: absolute; z-index: 1; top: 4px; bottom: 4px; left: 0; width: 0;
+    border-radius: 999px; background: var(--primary); box-shadow: 0 2px 8px rgba(43, 109, 246, .3);
+    transition: transform .32s cubic-bezier(.22, .61, .36, 1), width .32s cubic-bezier(.22, .61, .36, 1);
+    will-change: transform, width;
+  }
+
+  .form-head { margin-bottom: 22px; }
+  .form-head h1 { font-size: 24px; font-weight: 800; margin: 0 0 8px; }
+  .form-head p { font-size: 13.5px; color: var(--text-2); margin: 0; }
+
+  .row { display: flex; gap: 10px; }
+  .row > * { flex: 1; }
+
+  .pw-wrap { position: relative; }
+  .pw-toggle {
+    position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+    width: 30px; height: 30px; border-radius: 6px; display: grid; place-items: center; color: var(--text-3);
+  }
+  .pw-toggle:hover { color: var(--primary); background: var(--surface-2); }
+  .pw-toggle svg { width: 16px; height: 16px; }
+
+  .between { display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: var(--text-2); margin-bottom: 20px; }
+  .between a { color: var(--primary); }
+  .check { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
+  .check input { accent-color: var(--primary); width: 15px; height: 15px; }
+
+  .divider-text {
+    display: flex; align-items: center; gap: 12px; color: var(--text-3);
+    font-size: 12.5px; margin: 22px 0;
+  }
+  .divider-text::before, .divider-text::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+
+  .oauth { display: flex; gap: 10px; }
+  .oauth button {
+    flex: 1; height: 42px; border-radius: var(--radius); border: 1px solid var(--border);
+    background: var(--surface); color: var(--text-2); font-size: 13.5px;
+    display: flex; align-items: center; justify-content: center; gap: 7px; transition: all .15s;
+  }
+  .oauth button:hover { border-color: var(--primary); color: var(--primary); }
+  .oauth svg { width: 16px; height: 16px; }
+
+  .switch { text-align: center; font-size: 13.5px; color: var(--text-2); margin-top: 24px; }
+  .switch a { color: var(--primary); font-weight: 600; }
+
+  .view { display: none; }
+  .view.active { display: block; animation: fadeUp .35s cubic-bezier(.22,.61,.36,1) both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+  html.mobile-layout {
+    .auth { grid-template-columns: 1fr; }
+    .side { display: none; }
+    .panel { padding: 32px 20px 60px; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<div id="header"></div>
+
+<div class="auth">
+  <section class="side">
+    <div class="side-inner">
+      <h2>欢迎回到<br />XJ Store</h2>
+      <p>登录后可以管理订单、查看已购商品与卡密，并享受更快捷的结算体验。</p>
+      <div class="feat">
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 8h14l-1 12H6L5 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></span>
+        <div><div class="t">订单集中管理</div><div class="d">历史订单、卡密与发票一站查看</div></div>
+      </div>
+      <div class="feat">
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg></span>
+        <div><div class="t">即时交付</div><div class="d">支持自动发货，付款后秒到账</div></div>
+      </div>
+      <div class="feat">
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l8 4v6c0 4.5-3.4 7.4-8 8-4.6-.6-8-3.5-8-8V7z"/><path d="m9 12 2 2 4-4"/></svg></span>
+        <div><div class="t">账户安全</div><div class="d">登录状态加密存储，支持异地提醒</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="form-card anim-up">
+      <div class="tabs">
+        <button class="active" data-tab="login">登录</button>
+        <button data-tab="register">注册</button>
+        <button data-tab="guest">游客</button>
+        <span class="tab-indicator"></span>
+      </div>
+
+      <!-- 登录 -->
+      <div class="view active" id="v-login">
+        <div class="form-head">
+          <h1>登录账户</h1>
+          <p>还没有账号？<a href="#" data-go="register" style="color:var(--primary)">立即注册</a></p>
+        </div>
+        <div class="field">
+          <label class="field-label">邮箱 / 用户名</label>
+          <input class="input" id="lUser" placeholder="you@example.com" autocomplete="username" />
+          <div class="err-tip" id="lUserErr">请输入邮箱或用户名</div>
+        </div>
+        <div class="field">
+          <label class="field-label">密码</label>
+          <div class="pw-wrap">
+            <input class="input" id="lPwd" type="password" placeholder="请输入密码" autocomplete="current-password" />
+            <button class="pw-toggle" data-pw="lPwd" title="显示密码">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.8"/></svg>
+            </button>
+          </div>
+          <div class="err-tip" id="lPwdErr">密码至少 6 位</div>
+        </div>
+        <div class="between">
+          <label class="check"><input type="checkbox" id="lRemember" checked />记住我</label>
+          <a href="#">忘记密码？</a>
+        </div>
+        <div id="capLogin" style="margin:16px 0"></div>
+        <button class="btn btn-primary btn-block" id="lSubmit">登 录</button>
+        <button class="btn btn-ghost btn-block" id="lDemo" style="margin-top:10px">免登录体验 SVIP 折扣</button>
+        <button class="btn btn-ghost btn-block" id="lStellar" style="margin-top:10px">✦ 使用星际账户登录</button>
+        <div class="divider-text">或使用以下方式</div>
+        <div class="oauth">
+          <button><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M21 12a9 9 0 1 1-3.6-7.2"/><path d="M8 12h8M12 8v8"/></svg> 微信</button>
+          <button><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg> 邮箱码</button>
+        </div>
+      </div>
+
+      <!-- 注册 -->
+      <div class="view" id="v-register">
+        <div class="form-head">
+          <h1>创建账号</h1>
+          <p>已有账号？<a href="#" data-go="login" style="color:var(--primary)">去登录</a></p>
+        </div>
+        <div class="field">
+          <label class="field-label">邮箱</label>
+          <input class="input" id="rMail" placeholder="you@example.com" />
+          <div class="err-tip" id="rMailErr">请输入正确的邮箱地址</div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label class="field-label">用户名</label>
+            <input class="input" id="rName" placeholder="2-16 个字符" />
+            <div class="err-tip" id="rNameErr">用户名至少 2 个字符</div>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label">密码</label>
+          <div class="pw-wrap">
+            <input class="input" id="rPwd" type="password" placeholder="至少 8 位，含字母和数字" />
+            <button class="pw-toggle" data-pw="rPwd" title="显示密码">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.8"/></svg>
+            </button>
+          </div>
+          <div class="err-tip" id="rPwdErr">密码需至少 8 位且包含字母与数字</div>
+        </div>
+        <div class="field">
+          <label class="field-label">确认密码</label>
+          <input class="input" id="rPwd2" type="password" placeholder="再次输入密码" />
+          <div class="err-tip" id="rPwd2Err">两次输入的密码不一致</div>
+        </div>
+        <button class="btn btn-primary btn-block" id="rSubmit">注 册</button>
+      </div>
+
+      <!-- 游客 -->
+      <div class="view" id="v-guest">
+        <div class="form-head">
+          <h1>游客登录</h1>
+          <p>不注册也能下单，凭邮箱和订单号查询交付内容。</p>
+        </div>
+        <div class="field">
+          <label class="field-label">接收邮箱</label>
+          <input class="input" id="gMail" placeholder="用于接收卡密与订单通知" />
+          <div class="err-tip" id="gMailErr">请输入正确的邮箱地址</div>
+        </div>
+        <div class="field">
+          <label class="field-label">验证码</label>
+          <div class="row">
+            <input class="input" id="gCode" placeholder="6 位验证码" />
+            <button class="btn btn-outline" id="gSend" style="flex:0 0 118px">发送验证码</button>
+          </div>
+          <div class="err-tip" id="gCodeErr">请输入 6 位验证码</div>
+        </div>
+        <button class="btn btn-primary btn-block" id="gSubmit">进入商店</button>
+        <div class="switch">游客订单保留 30 天，建议注册账号长期使用</div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div id="footer"></div>
+<button class="to-top" id="toTop" title="回到顶部"></button>
+
+<script src="assets/base.js"></script>
+<script src="assets/cap.js"></script>
+<script>
+/* ---- 标签切换 ---- */
+document.querySelector('.tabs').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-tab]');
+  if (!btn) return;
+  switchTab(btn.dataset.tab);
+});
+document.querySelectorAll('[data-go]').forEach(a => {
+  a.addEventListener('click', e => { e.preventDefault(); switchTab(a.dataset.go); });
+});
+
+function switchTab(key) {
+  document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === key));
+  document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === 'v-' + key));
+  moveIndicator();
+}
+
+/* ---- 滑动高亮指示条 ---- */
+function moveIndicator() {
+  const tabs = document.querySelector('.tabs');
+  if (!tabs) return;
+  const active = tabs.querySelector('button.active');
+  const ind = tabs.querySelector('.tab-indicator');
+  if (!active || !ind) return;
+  ind.style.width = active.offsetWidth + 'px';
+  ind.style.transform = 'translateX(' + active.offsetLeft + 'px)';
+}
+window.addEventListener('resize', () => requestAnimationFrame(moveIndicator));
+document.addEventListener('xj:langchange', () => requestAnimationFrame(moveIndicator));
+
+/* ---- 显示密码 ---- */
+document.querySelectorAll('[data-pw]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const input = document.getElementById(btn.dataset.pw);
+    input.type = input.type === 'password' ? 'text' : 'password';
+  });
+});
+
+/* ---- 校验工具 ---- */
+const isMail = s => /^[\w.+-]+@[\w-]+(\.[\w-]+)+$/.test(s);
+function setErr(id, msg) {
+  const tip = document.getElementById(id);
+  tip.textContent = msg;
+  tip.classList.add('show');
+}
+function clearErr(id) { document.getElementById(id).classList.remove('show'); }
+
+/* ---- Cap 人机验证控制器（登录确认） ---- */
+let capLogin = { enabled: false, token: () => '', rerender: () => {} };
+
+/* ---- 保存登录态（含会话令牌，确保商店 / 账号中心跨入口单点可用） ---- */
+function saveAccount(acct, token) {
+  localStorage.setItem('xj_user', JSON.stringify({
+    uid: acct.id, name: acct.name, mail: acct.mail, level: acct.level,
+    point: acct.point, banned: acct.banned, type: 'member',
+    token: token || acct.token || '',
+  }));
+}
+
+/* ---- 登录后回跳（支持 ?back=xxx.html） ---- */
+function goAfterAuth() {
+  const b = new URLSearchParams(location.search).get('back');
+  const allow = ['redeem.html', 'me.html', 'store.html', 'cart.html', 'checkout.html'];
+  location.href = (b && allow.includes(b)) ? b : 'me.html';
+}
+
+/* ---- 登录 ---- */
+document.getElementById('lSubmit').addEventListener('click', async () => {
+  const u = document.getElementById('lUser').value.trim();
+  const p = document.getElementById('lPwd').value;
+  let ok = true;
+  clearErr('lUserErr'); clearErr('lPwdErr');
+  if (!u) { setErr('lUserErr', '请输入邮箱或用户名'); ok = false; }
+  if (p.length < 6) { setErr('lPwdErr', '密码至少 6 位'); ok = false; }
+  if (!ok) return;
+  if (capLogin.enabled && !capLogin.token()) { XJ.toast('请先完成人机验证'); return; }
+  try {
+    const r = await fetch('/api/account/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: u, pwd: p, capToken: capLogin.token() }) });
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.msg || '登录失败');
+    saveAccount(j.account, j.token);
+    XJ.toast('登录成功，正在跳转…');
+    setTimeout(goAfterAuth, 700);
+  } catch (e) {
+    if (capLogin.enabled) capLogin.rerender();
+    XJ.toast(e.message || '登录失败，请确认服务已启动');
+  }
+});
+
+/* ---- 免登录体验会员折扣 ---- */
+document.getElementById('lDemo').addEventListener('click', async () => {
+  try {
+    const r = await fetch('/api/account/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: '至尊会员0001', pwd: '123456', capToken: capLogin.token() }) });
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.msg || '体验登录失败');
+    saveAccount(j.account, j.token);
+    XJ.toast('已以 SVIP 体验身份登录，下单享受 1.5 折');
+    setTimeout(() => location.href = 'store.html', 800);
+  } catch (e) {
+    XJ.toast(e.message || '体验登录失败');
+  }
+});
+
+/* ---- 使用星际账户登录：跳转账号中心确认 ---- */
+document.getElementById('lStellar').addEventListener('click', () => {
+  const sp = new URLSearchParams(location.search);
+  sp.delete('stellar');
+  const back = location.pathname + (sp.toString() ? '?' + sp.toString() : '');
+  location.href = 'account-server.html?redirect=' + encodeURIComponent(back);
+});
+
+/* ---- 注册 ---- */
+document.getElementById('rSubmit').addEventListener('click', async () => {
+  const mail = document.getElementById('rMail').value.trim();
+  const name = document.getElementById('rName').value.trim();
+  const pwd = document.getElementById('rPwd').value;
+  const pwd2 = document.getElementById('rPwd2').value;
+  ['rMailErr', 'rNameErr', 'rPwdErr', 'rPwd2Err'].forEach(clearErr);
+  let ok = true;
+  if (!isMail(mail)) { setErr('rMailErr', '请输入正确的邮箱地址'); ok = false; }
+  if (name.length < 2) { setErr('rNameErr', '用户名至少 2 个字符'); ok = false; }
+  if (!/^(?=.*[A-Za-z])(?=.*\d).{8,}$/.test(pwd)) { setErr('rPwdErr', '密码需至少 8 位且包含字母与数字'); ok = false; }
+  if (pwd !== pwd2) { setErr('rPwd2Err', '两次输入的密码不一致'); ok = false; }
+  if (!ok) return;
+  try {
+    const r = await fetch('/api/account/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, mail, pwd }) });
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.msg || '注册失败');
+    saveAccount(j.account, j.token);
+    XJ.toast('注册成功，已自动登录');
+    setTimeout(goAfterAuth, 700);
+  } catch (e) {
+    XJ.toast(e.message || '注册失败，请确认服务已启动');
+  }
+});
+
+/* ---- 游客 ---- */
+let countdown = 0;
+document.getElementById('gSend').addEventListener('click', () => {
+  const mail = document.getElementById('gMail').value.trim();
+  clearErr('gMailErr');
+  if (!isMail(mail)) { setErr('gMailErr', '请输入正确的邮箱地址'); return; }
+  const btn = document.getElementById('gSend');
+  countdown = 60;
+  btn.disabled = true;
+  btn.textContent = countdown + 's';
+  XJ.toast('验证码已发送至 ' + mail);
+  const timer = setInterval(() => {
+    countdown--;
+    btn.textContent = countdown + 's';
+    if (countdown <= 0) { clearInterval(timer); btn.disabled = false; btn.textContent = '发送验证码'; }
+  }, 1000);
+});
+
+document.getElementById('gSubmit').addEventListener('click', () => {
+  const mail = document.getElementById('gMail').value.trim();
+  const code = document.getElementById('gCode').value.trim();
+  clearErr('gMailErr'); clearErr('gCodeErr');
+  let ok = true;
+  if (!isMail(mail)) { setErr('gMailErr', '请输入正确的邮箱地址'); ok = false; }
+  if (!/^\d{6}$/.test(code)) { setErr('gCodeErr', '请输入 6 位验证码'); ok = false; }
+  if (!ok) return;
+  localStorage.setItem('xj_user', JSON.stringify({ name: '游客', mail: mail, type: 'guest' }));
+  XJ.toast('已进入商店');
+  setTimeout(() => location.href = 'store.html', 900);
+});
+
+/* ---- 星际账户登录回跳：校验授权票据并完成登录 ---- */
+(async function stellarCallback() {
+  const sp = new URLSearchParams(location.search);
+  const ticket = sp.get('stellar');
+  if (!ticket) return;
+  try {
+    const r = await fetch('/api/stellar/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ticket }) });
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.msg || '授权失败');
+    const a = j.account;
+    localStorage.setItem('xj_user', JSON.stringify({
+      uid: a.id, name: a.name, mail: a.mail, level: a.level,
+      point: a.point, banned: a.banned, type: 'member',
+    }));
+    XJ.toast('星际账户登录成功');
+    const clean = location.pathname + (sp.get('back') ? '?back=' + encodeURIComponent(sp.get('back')) : '');
+    history.replaceState(null, '', clean);
+    setTimeout(goAfterAuth, 600);
+  } catch (e) {
+    XJ.toast(e.message || '星际登录失败');
+    history.replaceState(null, '', location.pathname);
+  }
+})();
+
+XJ.init({ active: 'about' });
+/* 登录确认：挂载 Cap 验证组件（仅服务端启用时渲染） */
+if (window.CapGuard) CapGuard.mount(document.getElementById('capLogin'), function () {}).then(function (c) { capLogin = c; });
+requestAnimationFrame(moveIndicator);
+</script>
+</body>
+</html>

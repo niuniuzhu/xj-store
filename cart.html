@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>购物车 · XJ Store</title>
+<script src="assets/head.js"></script>
+<link rel="stylesheet" href="assets/base.css" />
+<style>
+  .wrap { width: 100%; max-width: min(var(--page-w), 100% - 32px); margin: 0 auto; padding: 22px 22px 0; }
+  .page-title { display: flex; align-items: center; gap: 9px; font-size: 22px; font-weight: 800; padding: 6px 2px 18px; }
+  .page-title::before { content: ""; width: 3px; height: 20px; border-radius: 2px; background: var(--primary); }
+
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 18px; align-items: start; }
+
+  .list { padding: 8px 8px 4px; }
+  .item {
+    display: flex; align-items: center; gap: 14px; padding: 14px 10px;
+    border-radius: var(--radius); transition: background .15s;
+  }
+  .item + .item { border-top: 1px solid var(--border); }
+  .item:hover { background: var(--surface-2); }
+  .item.removing { animation: slideOut .28s ease forwards; }
+  @keyframes slideOut { to { opacity: 0; transform: translateX(28px); } }
+
+  .thumb { width: 56px; height: 56px; border-radius: 12px; display: grid; place-items: center; font-size: 24px; flex-shrink: 0; position: relative; overflow: hidden; }
+  .thumb::after { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at 30% 20%, rgba(255,255,255,.35), transparent 60%); }
+  .i-body { flex: 1; min-width: 0; }
+  .i-name { font-size: 15px; font-weight: 600; margin-bottom: 5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .i-spec { font-size: 12.5px; color: var(--text-3); }
+  .i-price { font-size: 14px; color: var(--text-2); white-space: nowrap; }
+  .i-sub { font-size: 15px; font-weight: 700; white-space: nowrap; min-width: 92px; text-align: right; }
+  .i-del { width: 32px; height: 32px; border-radius: 8px; display: grid; place-items: center; color: var(--text-3); flex-shrink: 0; transition: all .15s; }
+  .i-del:hover { background: #fff1f0; color: var(--red); }
+  .i-del svg { width: 16px; height: 16px; }
+
+  .qty { display: inline-flex; align-items: center; border: 1px solid var(--border-strong); border-radius: 8px; overflow: hidden; background: var(--surface); }
+  .qty button { width: 32px; height: 32px; display: grid; place-items: center; color: var(--text-2); font-size: 15px; transition: background .15s, color .15s; }
+  .qty button:hover:not(:disabled) { background: var(--surface-2); color: var(--primary); }
+  .qty button:disabled { opacity: .35; cursor: not-allowed; }
+  .qty span { min-width: 40px; text-align: center; font-size: 14px; font-weight: 600; }
+
+  /* 结算卡 */
+  .summary { padding: 22px 24px 24px; position: sticky; top: calc(var(--header-h) + 22px); }
+  .s-row { display: flex; align-items: center; justify-content: space-between; font-size: 14px; margin-bottom: 14px; color: var(--text-2); }
+  .s-row.total { margin-top: 18px; padding-top: 18px; border-top: 1px dashed var(--border); color: var(--text); }
+  .s-row.total .num { font-size: 26px; font-weight: 800; color: var(--primary); }
+  .s-row .num { font-weight: 600; color: var(--text); }
+
+  html.mobile-layout {
+    .layout { grid-template-columns: 1fr; }
+    .summary { position: static; }
+    .wrap { padding: 16px 14px 0; }
+    .i-price { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div id="header"></div>
+
+<div class="wrap">
+  <div class="page-title">购物车 <span id="countTip" style="font-size:14px;font-weight:500;color:var(--text-3)"></span></div>
+  <div class="layout">
+    <div class="card list" id="list"></div>
+    <aside class="card summary" id="summary"></aside>
+  </div>
+  <a class="back-link" href="store.html" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:34px 0 10px;color:var(--text-2);font-size:14px">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="width:16px;height:16px"><path d="m15 5-7 7 7 7"/></svg>
+    继续挑选商品
+  </a>
+</div>
+
+<div id="footer"></div>
+<button class="to-top" id="toTop" title="回到顶部"></button>
+
+<script src="assets/base.js"></script>
+<script>
+const ICON_DEL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13h10l1-13"/></svg>';
+const ICON_EMPTY = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2 3h3l2.4 12.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.6L21 7H6"/></svg>';
+
+const listEl = document.getElementById('list');
+const summaryEl = document.getElementById('summary');
+
+function render() {
+  const items = XJ.cart.all();
+  const count = XJ.cart.count();
+  document.getElementById('countTip').textContent = count ? XJ.tr('共 ') + count + XJ.tr('件') : '';
+
+  if (!items.length) {
+    listEl.innerHTML = `<div class="empty anim-in">${ICON_EMPTY}
+      <div>购物车还是空的</div>
+      <div style="margin-top:18px"><a class="btn btn-primary btn-sm" href="store.html">去逛逛</a></div>
+    </div>`;
+    summaryEl.style.display = 'none';
+    return;
+  }
+
+  summaryEl.style.display = '';
+  listEl.innerHTML = items.map((it, i) => `
+    <div class="item anim-up d${Math.min(i + 1, 6)}" data-id="${it.id}" data-spec="${it.spec}">
+      <div class="thumb" style="background:${it.color}">${it.emoji}</div>
+      <div class="i-body">
+        <div class="i-name">${it.title}</div>
+        <div class="i-spec">${XJ.tr('规格：')}${it.spec}</div>
+      </div>
+      <div class="i-price">${it.price.toFixed(2)} CNY</div>
+      <div class="qty">
+        <button data-act="minus" ${it.qty <= 1 ? 'disabled' : ''}>−</button>
+        <span>${it.qty}</span>
+        <button data-act="plus">+</button>
+      </div>
+      <div class="i-sub">${(it.price * it.qty).toFixed(2)}</div>
+      <button class="i-del" data-act="del" title="移除">${ICON_DEL}</button>
+    </div>`).join('');
+
+  const total = XJ.cart.total();
+  summaryEl.innerHTML = `
+    <div class="section-title" style="margin-bottom:20px">订单摘要</div>
+    <div class="s-row"><span>商品件数</span><span class="num">${count}</span></div>
+    <div class="s-row"><span>商品总额</span><span class="num">${total.toFixed(2)} CNY</span></div>
+    <div class="s-row"><span>优惠减免</span><span class="num" style="color:var(--green)">-0.00 CNY</span></div>
+    <div class="s-row total"><span>应付合计</span><span class="num">${total.toFixed(2)}</span></div>
+    <a class="btn btn-primary btn-block" href="checkout.html" style="margin-top:20px">去结算</a>
+    <button class="btn btn-outline btn-block btn-sm" id="clearBtn" style="margin-top:10px">清空购物车</button>`;
+
+  document.getElementById('clearBtn').addEventListener('click', () => {
+    XJ.cart.clear();
+    XJ.toast(XJ.tr('购物车已清空'));
+    render();
+  });
+}
+
+listEl.addEventListener('click', e => {
+  const btn = e.target.closest('[data-act]');
+  if (!btn) return;
+  const row = e.target.closest('.item');
+  const id = Number(row.dataset.id);
+  const spec = row.dataset.spec;
+  const it = XJ.cart.all().find(x => x.id === id && x.spec === spec);
+  if (!it) return;
+
+  const act = btn.dataset.act;
+  if (act === 'plus') XJ.cart.setQty(id, spec, it.qty + 1);
+  else if (act === 'minus') XJ.cart.setQty(id, spec, it.qty - 1);
+  else if (act === 'del') {
+    row.classList.add('removing');
+    setTimeout(() => { XJ.cart.remove(id, spec); XJ.toast(XJ.tr('已移除该商品')); render(); }, 260);
+    return;
+  }
+  render();
+});
+
+render();
+XJ.guardBanned();
+XJ.init({ active: 'home' });
+
+/* 语言切换时重渲购物车 */
+document.addEventListener('xj:langchange', () => { render(); XJ.retranslate(); });
+</script>
+</body>
+</html>

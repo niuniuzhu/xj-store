@@ -1,0 +1,41 @@
+# Cap 自托管人机验证（trycap.dev）· XJ Store 部署
+# 官方文档：https://trycap.dev/zh/guide/
+# 用法：
+#   1) 复制 .env.example 为 .env，填入 CAP_ADMIN_KEY（≥32 位随机串，这是 Cap 控制台登录密码，不是站点 secret）
+#   2) 在本目录执行：docker compose up -d
+#   3) 浏览器打开 http://localhost:3000 ，用 CAP_ADMIN_KEY 登录，创建一个站点密钥 → 得到 site key + secret key
+#   4) 把这两个 key 及实例地址填进 server/config.json 的 capSiteKey / capSecretKey / capInstance，并把 capEnabled 改为 true
+#   5) 重启 XJ Store 服务（端口 8080），登录/支付页即出现验证框
+#
+# 生产环境注意：capInstance 必须是「访客浏览器能访问到的公开 URL」（如 https://cap.xjstore.com），
+# 不能是 localhost；用反向代理把 3000 端口暴露到公网并配 HTTPS。本机只是联调用。
+
+services:
+  cap:
+    image: tiago2/cap:latest
+    container_name: cap
+    ports:
+      - "3000:3000"
+    environment:
+      ADMIN_KEY: ${CAP_ADMIN_KEY}
+      REDIS_URL: redis://valkey:6379
+    depends_on:
+      valkey:
+        condition: service_healthy
+    restart: unless-stopped
+
+  valkey:
+    image: valkey/valkey:9-alpine
+    container_name: cap-valkey
+    volumes:
+      - valkey-data:/data
+    command: valkey-server --save 60 1 --loglevel warning --maxmemory-policy noeviction
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  valkey-data:

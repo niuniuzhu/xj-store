@@ -1,0 +1,1233 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>管理后台 · XJ Store</title>
+<script src="assets/head.js"></script>
+<link rel="stylesheet" href="assets/base.css" />
+<style>
+  .wrap { width: 100%; max-width: min(var(--page-w), 100% - 32px); margin: 0 auto; padding: 24px 22px 0; }
+
+  /* 门禁 */
+  .gate { min-height: calc(100vh - var(--header-h) - 200px); display: grid; place-items: center; padding: 40px 20px; }
+  .gate-card { width: 100%; max-width: 380px; padding: 34px 32px 30px; text-align: center; }
+  .gate-ico {
+    width: 58px; height: 58px; border-radius: 16px; margin: 0 auto 18px;
+    background: linear-gradient(135deg, var(--primary), #7ab0ff);
+    display: grid; place-items: center; color: #fff;
+    box-shadow: 0 8px 22px rgba(43, 109, 246, .35);
+  }
+  .gate-ico svg { width: 26px; height: 26px; }
+  .gate h1 { font-size: 22px; font-weight: 800; margin: 0 0 6px; }
+  .gate p { color: var(--text-3); font-size: 13px; margin: 0 0 24px; }
+  .gate .input { text-align: left; }
+  .gate-err { color: var(--red); font-size: 13px; margin-top: 12px; display: none; }
+  .gate-err.show { display: block; }
+
+  .admin-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; padding: 6px 2px 18px; }
+  .admin-title { display: flex; align-items: center; gap: 9px; font-size: 22px; font-weight: 800; }
+  .admin-title::before { content: ""; width: 3px; height: 20px; border-radius: 2px; background: var(--primary); }
+
+  .tabs { position: relative; display: flex; gap: 4px; background: var(--surface); padding: 4px; border-radius: 999px; margin-bottom: 18px; width: fit-content; max-width: 100%; flex-wrap: nowrap; overflow-x: auto; box-shadow: var(--shadow-card); scrollbar-width: none; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tabs button { position: relative; z-index: 2; padding: 8px 16px; border-radius: 999px; font-size: 13.5px; color: var(--text-2); background: transparent; border: none; cursor: pointer; transition: color .22s; white-space: nowrap; }
+  .tabs button.active { color: #fff; font-weight: 600; }
+  .tabs .tab-indicator { position: absolute; z-index: 1; top: 4px; bottom: 4px; left: 0; width: 0; border-radius: 999px; background: var(--primary); box-shadow: 0 4px 14px rgba(43, 109, 246, .35); transition: transform .32s cubic-bezier(.22, .61, .36, 1), width .32s cubic-bezier(.22, .61, .36, 1); will-change: transform, width; }
+
+  .panel-card { padding: 22px 24px 24px; }
+  .panel-card .section-title { margin-bottom: 18px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th { text-align: left; font-size: 12.5px; font-weight: 600; color: var(--text-3); padding: 0 10px 12px; border-bottom: 1px solid var(--border); }
+  td { padding: 12px 10px; border-bottom: 1px solid var(--border); color: var(--text-2); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  .td-name { color: var(--text); font-weight: 600; }
+  .row-actions { display: flex; gap: 8px; justify-content: flex-end; }
+  .mini { padding: 5px 12px; border-radius: 7px; font-size: 12.5px; background: var(--surface-2); color: var(--text-2); transition: all .15s; cursor: pointer; border: none; }
+  .mini:hover { background: var(--primary-soft); color: var(--primary); }
+  .mini.danger:hover { background: #fff1f0; color: var(--red); }
+  .thumb-sm { width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; font-size: 17px; }
+
+  .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 0 18px; }
+
+  /* 弹窗 */
+  .mask {
+    position: fixed; inset: 0; z-index: 120; background: rgba(15, 18, 24, .5);
+    display: none; align-items: center; justify-content: center; padding: 24px;
+    backdrop-filter: blur(3px);
+  }
+  .mask.show { display: flex; animation: fadeIn .2s ease; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .modal {
+    width: 100%; max-width: 620px; max-height: 88vh; overflow-y: auto;
+    background: var(--surface); border-radius: var(--radius-lg); padding: 26px 28px 24px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, .3); animation: popIn .22s cubic-bezier(.22,.61,.36,1);
+  }
+  @keyframes popIn { from { opacity: 0; transform: translateY(14px) scale(.98); } to { opacity: 1; transform: none; } }
+  .modal h3 { margin: 0 0 20px; font-size: 18px; font-weight: 700; }
+  .modal-foot { display: flex; gap: 10px; justify-content: flex-end; margin-top: 22px; }
+  .spec-row { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
+  .spec-row .input { flex: 1; }
+  .spec-row .input.w80 { flex: 0 0 110px; }
+  .switch { display: flex; align-items: center; gap: 10px; padding: 12px 0; cursor: pointer; }
+  .switch input { accent-color: var(--primary); width: 16px; height: 16px; }
+  .switch.switch-row { align-items: flex-start; padding: 8px 0; }
+  .switch.switch-row input { margin-top: 2px; }
+  .hint { font-size: 12.5px; color: var(--text-3); margin-top: 6px; line-height: 1.7; }
+  .empty-row { text-align: center; padding: 40px 0; color: var(--text-3); }
+
+  /* 看板 / 统计 */
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  .stat { padding: 18px 20px; }
+  .stat .n { font-size: 24px; font-weight: 800; margin-bottom: 4px; }
+  .stat .t { font-size: 12.5px; color: var(--text-3); }
+  .stat .n.c1 { color: var(--primary); } .stat .n.c2 { color: #f59e0b; } .stat .n.c3 { color: var(--green); }
+  .dist-bar { display: flex; height: 26px; border-radius: 8px; overflow: hidden; margin: 14px 0 8px; background: var(--surface-2); }
+  .dist-bar span { display: grid; place-items: center; color: #fff; font-size: 12px; font-weight: 600; transition: width .4s; }
+  .dist-legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12.5px; color: var(--text-2); }
+  .dist-legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; margin-right: 6px; vertical-align: middle; }
+
+  /* 搜索 */
+  .search-box { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 0 14px; height: 42px; max-width: 320px; margin-bottom: 16px; }
+  .search-box svg { width: 16px; height: 16px; color: var(--text-3); }
+  .search-box input { flex: 1; border: none; outline: none; background: none; font-size: 14px; height: 100%; }
+  .toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+
+  /* 卡密批次 */
+  .batch { border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 14px; overflow: hidden; }
+  .batch-head { display: flex; align-items: center; gap: 12px; padding: 14px 16px; background: var(--surface-2); cursor: pointer; }
+  .batch-head .bn { font-weight: 700; flex: 1; }
+  .batch-keys { padding: 12px 16px; display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; font-family: ui-monospace, Consolas, monospace; font-size: 12.5px; }
+  .batch-keys .k { padding: 6px 10px; border-radius: 6px; background: var(--surface); border: 1px solid var(--border); display: flex; justify-content: space-between; gap: 8px; }
+  .batch-keys .k.used { opacity: .55; }
+  .batch-keys .k .u { color: var(--green); font-size: 11px; }
+
+  .perm-tags { display: flex; gap: 5px; flex-wrap: wrap; }
+  .perm-tags .pt { font-size: 11.5px; padding: 3px 8px; border-radius: 6px; background: var(--primary-soft); color: var(--primary); }
+
+  .alert.ok { background: #f6ffed; border: 1px solid #b7eb8f; color: #389e0d; }
+  html[data-theme="dark"] .alert.ok { background: rgba(18, 161, 80, .12); border-color: rgba(18, 161, 80, .38); color: #5fd39a; }
+
+  html.mobile-layout { .wrap { padding: 16px 14px 0; } }
+
+  /* 维护模式开关 */
+  .switch { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .switch .slider {
+    position: absolute; inset: 0; cursor: pointer; background: var(--border-strong);
+    border-radius: 999px; transition: background .2s;
+  }
+  .switch .slider::before {
+    content: ""; position: absolute; height: 18px; width: 18px; left: 3px; top: 3px;
+    background: #fff; border-radius: 50%; transition: transform .2s; box-shadow: 0 1px 3px rgba(0,0,0,.25);
+  }
+  .switch input:checked + .slider { background: var(--primary); }
+  .switch input:checked + .slider::before { transform: translateX(20px); }
+</style>
+</head>
+<body>
+
+<div id="header"></div>
+
+<!-- 登录门禁 -->
+<div id="gate" class="gate" style="display:none">
+  <div class="card gate-card anim-up">
+    <div class="gate-ico">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+    </div>
+    <h1>管理后台</h1>
+    <p>仅限管理员账号进入</p>
+    <div class="field">
+      <input class="input" id="gUser" placeholder="管理员账号" autocomplete="username" />
+    </div>
+    <div class="field">
+      <input class="input" id="gPass" type="password" placeholder="密码" autocomplete="current-password" />
+    </div>
+    <button class="btn btn-primary btn-block" id="gLogin">登 录</button>
+    <div class="gate-err" id="gErr"></div>
+  </div>
+</div>
+
+<!-- 后台主体 -->
+<div id="app" class="wrap" style="display:none">
+  <div class="admin-head">
+    <div class="admin-title">管理后台</div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <span class="tag blue" id="who"></span>
+      <a class="btn btn-primary btn-sm" href="account-admin.html">批量管理账户 →</a>
+      <button class="btn btn-outline btn-sm" id="logoutBtn">退出登录</button>
+    </div>
+  </div>
+
+  <div class="tabs" id="tabs"></div>
+
+  <div id="tab-store" style="display:none"></div>
+  <div id="tab-dash" style="display:none"></div>
+  <div id="tab-accounts" style="display:none"></div>
+  <div id="tab-products" style="display:none"></div>
+  <div id="tab-categories" style="display:none"></div>
+  <div id="tab-coupons" style="display:none"></div>
+  <div id="tab-cards" style="display:none"></div>
+  <div id="tab-orders" style="display:none"></div>
+  <div id="tab-interactions" style="display:none"></div>
+  <div id="tab-ai" style="display:none"></div>
+  <div id="tab-pay" style="display:none"></div>
+  <div id="tab-account" style="display:none"></div>
+</div>
+
+<!-- 通用弹窗 -->
+<div class="mask" id="mask">
+  <div class="modal">
+    <h3 id="mTitle">编辑</h3>
+    <div id="mBody"></div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" id="mCancel">取消</button>
+      <button class="btn btn-primary" id="mSave">保存</button>
+    </div>
+  </div>
+</div>
+
+<div id="footer"></div>
+<button class="to-top" id="toTop" title="回到顶部"></button>
+
+<script src="assets/base.js"></script>
+<script>
+let CATS = [
+  { id: 'bot', name: '测试机器人', icon: 'bot' }, { id: 'plugin', name: '测试插件', icon: 'plug' },
+  { id: 'resource', name: '测试资源', icon: 'book' }, { id: 'service', name: '商品服务', icon: 'spark' },
+];
+/* 后台可选图标（与前台 store.html 的 ICONS 对应） */
+const CAT_ICONS = ['grid', 'bot', 'plug', 'book', 'spark', 'cart'];
+const TAG_COLORS = ['orange', 'blue', 'green'];
+const LEVEL_OPTIONS = [
+  { v: '', name: '未设置' }, { v: 'none', name: '无折扣' }, { v: 'lvip', name: 'LVIP(7折)' },
+  { v: 'vip', name: 'VIP(4.5折)' }, { v: 'svip', name: 'SVIP(1.5折)' },
+];
+
+let TOKEN = sessionStorage.getItem('xj_admin_token') || '';
+let PRODUCTS = [];
+let CONFIG = {};
+let ORDERS = [];
+let LEVELS = {};
+
+const gate = document.getElementById('gate');
+const app = document.getElementById('app');
+const mask = document.getElementById('mask');
+
+/* ---------- 请求封装 ---------- */
+async function api(url, opts) {
+  opts = opts || {};
+  opts.headers = Object.assign({ 'x-admin-token': TOKEN }, opts.headers || {});
+  if (opts.body) opts.headers['Content-Type'] = 'application/json';
+  const r = await fetch(url, opts);
+  const j = await r.json().catch(() => ({ ok: false, msg: '服务返回异常' }));
+  if (r.status === 401 || r.status === 403) {
+    if (j.msg) XJ.toast(j.msg);
+    if (r.status === 401) logout();
+    throw new Error(j.msg || '未授权');
+  }
+  return j;
+}
+function logout() {
+  sessionStorage.removeItem('xj_admin_token');
+  TOKEN = '';
+  app.style.display = 'none';
+  gate.style.display = '';
+}
+function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
+
+/* ---------- 通用弹窗 ---------- */
+let modalSave = null;
+function showModal(title, html, onSave) {
+  document.getElementById('mTitle').textContent = title;
+  document.getElementById('mBody').innerHTML = html;
+  modalSave = onSave;
+  mask.classList.add('show');
+}
+document.getElementById('mCancel').addEventListener('click', () => { mask.classList.remove('show'); modalSave = null; });
+mask.addEventListener('click', e => { if (e.target === mask) { mask.classList.remove('show'); modalSave = null; } });
+document.getElementById('mSave').addEventListener('click', () => { if (modalSave) { const fn = modalSave; modalSave = null; fn(); } });
+
+/* ---------- 登录 ---------- */
+document.getElementById('gLogin').addEventListener('click', async () => {
+  const user = document.getElementById('gUser').value.trim();
+  const pass = document.getElementById('gPass').value;
+  const err = document.getElementById('gErr');
+  err.classList.remove('show');
+  if (!user || !pass) { err.textContent = '请输入账号和密码'; err.classList.add('show'); return; }
+  try {
+    const r = await fetch('/api/admin/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user, pass }) });
+    const j = await r.json();
+    if (!j.ok) { err.textContent = j.msg || '登录失败'; err.classList.add('show'); return; }
+    TOKEN = j.token;
+    sessionStorage.setItem('xj_admin_token', TOKEN);
+    await enter();
+  } catch (e) { err.textContent = '无法连接服务，请确认服务已启动'; err.classList.add('show'); }
+});
+document.getElementById('gPass').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('gLogin').click(); });
+document.getElementById('logoutBtn').addEventListener('click', () => { logout(); XJ.toast('已退出'); });
+
+/* ---------- 进入后台 ---------- */
+async function enter() {
+  let st;
+  try { st = await api('/api/admin/state'); }
+  catch (e) { logout(); return; }
+  if (!st.ok) { logout(); return; }
+  PRODUCTS = st.products || [];
+  CONFIG = st.config || {};
+  ORDERS = st.orders || [];
+  LEVELS = st.levels || {};
+  if (Array.isArray(st.categories) && st.categories.length) CATS = st.categories;
+  document.getElementById('who').textContent = '管理员：' + st.admin.user;
+  gate.style.display = 'none';
+  app.style.display = '';
+  renderTabs();
+  switchTab('store');
+}
+
+/* ---------- 标签页 ---------- */
+const TABS = [
+  { id: 'store', name: '商店基本管理' },
+  { id: 'dash', name: '数据看板' },
+  { id: 'accounts', name: '账户管理' },
+  { id: 'products', name: '商品管理' },
+  { id: 'categories', name: '分类管理' },
+  { id: 'coupons', name: '折扣券管理' },
+  { id: 'cards', name: '卡密管理' },
+  { id: 'orders', name: '订单管理' },
+  { id: 'interactions', name: '商品互动' },
+  { id: 'ai', name: 'XJ AI 配置' },
+  { id: 'pay', name: '支付配置' },
+  { id: 'account', name: '账户安全' },
+];
+function renderTabs() {
+  const tabs = document.getElementById('tabs');
+  tabs.innerHTML = TABS.map(t =>
+    `<button data-tab="${t.id}">${t.name}</button>`).join('') + '<span class="tab-indicator"></span>';
+  tabs.addEventListener('click', e => {
+    const b = e.target.closest('button[data-tab]');
+    if (!b) return;
+    switchTab(b.dataset.tab);
+  });
+}
+function moveIndicator() {
+  const tabs = document.getElementById('tabs');
+  if (!tabs) return;
+  const active = tabs.querySelector('button.active');
+  const ind = tabs.querySelector('.tab-indicator');
+  if (!active || !ind) return;
+  ind.style.width = active.offsetWidth + 'px';
+  ind.style.transform = 'translateX(' + active.offsetLeft + 'px)';
+}
+window.addEventListener('resize', () => requestAnimationFrame(moveIndicator));
+document.addEventListener('xj:langchange', () => requestAnimationFrame(moveIndicator));
+function switchTab(id) {
+  document.querySelectorAll('#tabs button').forEach(x => x.classList.toggle('active', x.dataset.tab === id));
+  TABS.forEach(t => { document.getElementById('tab-' + t.id).style.display = (t.id === id) ? '' : 'none'; });
+  const map = {
+    store: loadStore, dash: loadDash, accounts: loadAccounts, products: renderProducts,
+    categories: renderCategories,
+    coupons: loadCoupons, cards: loadCards, orders: renderOrders, interactions: loadInteractions,
+    ai: renderAi, pay: renderPay, account: renderAccount,
+  };
+  if (map[id]) map[id]();
+  requestAnimationFrame(moveIndicator);
+}
+
+/* =========================================================
+   1. 商店基本管理
+   ========================================================= */
+async function loadStore() {
+  let store = {};
+  try { const j = await api('/api/admin/store'); store = j.store || {}; } catch (e) {}
+  const pop = store.popup || {};
+  const bg = store.background || {};
+  const f = document.getElementById('tab-store');
+  f.innerHTML = `
+    <div class="card panel-card anim-up">
+      <div class="section-title">商店基本设置</div>
+      <div class="grid2">
+        <div class="field"><label class="field-label">商店名称</label><input class="input" id="sName" value="${esc(store.name)}" /></div>
+        <div class="field"><label class="field-label">商店标语</label><input class="input" id="sSlogan" value="${esc(store.slogan)}" /></div>
+      </div>
+      <div class="field"><label class="field-label">商店简介</label><textarea class="textarea" id="sDesc" rows="2">${esc(store.desc)}</textarea></div>
+      <div class="grid2">
+        <div class="field"><label class="field-label">联系邮箱</label><input class="input" id="sMail" value="${esc(store.contactMail)}" /></div>
+        <div class="field"><label class="field-label">联系 QQ</label><input class="input" id="sQq" value="${esc(store.contactQq)}" /></div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label class="field-label">联系微信</label><input class="input" id="sWx" value="${esc(store.contactWechat)}" /></div>
+        <div class="field"><label class="field-label">联系电话</label><input class="input" id="sPhone" value="${esc(store.contactPhone)}" /></div>
+      </div>
+      <div class="field"><label class="field-label">页脚文字</label><input class="input" id="sFooter" value="${esc(store.footerText)}" /></div>
+      <div class="field"><label class="field-label">首页公告</label><textarea class="textarea" id="sAnnounce" rows="2">${esc(store.announcement)}</textarea></div>
+      <div class="field" style="flex-direction:row;align-items:center;justify-content:space-between;gap:12px">
+        <label class="field-label" style="margin:0">随机背景图 <span style="color:var(--text-3);font-weight:400">（用户每次刷新/进入时请求一次图源，取一张随机图作站点背景）</span></label>
+        <label class="switch"><input type="checkbox" id="sBgOn" ${bg.enabled ? 'checked' : ''} /><span class="slider"></span></label>
+      </div>
+      <div class="grid2">
+        <div class="field"><label class="field-label">图源地址（每次返回随机图）</label><input class="input" id="sBgUrl" value="${esc(bg.url)}" placeholder="https://api.yppp.net/pc.php" /></div>
+        <div class="field"><label class="field-label">不透明度（0.05–1，越小越淡）</label><input class="input" id="sBgOp" type="number" step="0.05" min="0.05" max="1" value="${bg.opacity != null ? bg.opacity : 0.18}" /></div>
+      </div>
+      <div class="field" style="flex-direction:row;align-items:center;justify-content:space-between;gap:12px">
+        <label class="field-label" style="margin:0">首页弹窗公告 <span style="color:var(--text-3);font-weight:400">（开启后访客每天首次进入商店首页弹一次）</span></label>
+        <label class="switch"><input type="checkbox" id="sPopOn" ${pop.enabled ? 'checked' : ''} /><span class="slider"></span></label>
+      </div>
+      <div class="grid2">
+        <div class="field"><label class="field-label">版本号（改动后会对已看过的访客再弹一次）</label><input class="input" id="sPopVer" value="${esc(pop.version)}" placeholder="如 3.8.0" /></div>
+        <div class="field"><label class="field-label">跳转链接（选填）</label><input class="input" id="sPopLink" value="${esc(pop.link)}" placeholder="如 article.html?id=8" /></div>
+      </div>
+      <div class="field"><label class="field-label">弹窗标题</label><input class="input" id="sPopTitle" value="${esc(pop.title)}" placeholder="如：XJ Store v3.8.0 更新公告" /></div>
+      <div class="field"><label class="field-label">弹窗内容</label><textarea class="textarea" id="sPopBody" rows="3">${esc(pop.content)}</textarea></div>
+      <div class="field"><label class="field-label">按钮文字</label><input class="input" id="sPopBtn" value="${esc(pop.linkText)}" placeholder="查看完整更新内容" /></div>
+      <div class="field" style="flex-direction:row;align-items:center;justify-content:space-between;gap:12px">
+        <label class="field-label" style="margin:0">维护模式 <span style="color:var(--text-3);font-weight:400">（开启后访客将被引导至维护页，仅管理员可访问）</span></label>
+        <label class="switch"><input type="checkbox" id="sMaint" ${store.maintenance ? 'checked' : ''} /><span class="slider"></span></label>
+      </div>
+      <div class="field"><label class="field-label">维护提示（选填，展示在维护页）</label><textarea class="textarea" id="sMaintMsg" rows="2">${esc(store.maintenanceMsg || '')}</textarea></div>
+      <div class="modal-foot" style="justify-content:flex-start">
+        <button class="btn btn-primary" id="sSave">保存设置</button>
+      </div>
+    </div>`;
+  document.getElementById('sSave').addEventListener('click', async () => {
+    const patch = {
+      name: document.getElementById('sName').value.trim(),
+      slogan: document.getElementById('sSlogan').value.trim(),
+      desc: document.getElementById('sDesc').value,
+      contactMail: document.getElementById('sMail').value.trim(),
+      contactQq: document.getElementById('sQq').value.trim(),
+      contactWechat: document.getElementById('sWx').value.trim(),
+      contactPhone: document.getElementById('sPhone').value.trim(),
+      footerText: document.getElementById('sFooter').value.trim(),
+      announcement: document.getElementById('sAnnounce').value,
+      background: {
+        enabled: !!document.getElementById('sBgOn').checked,
+        url: document.getElementById('sBgUrl').value.trim(),
+        opacity: Number(document.getElementById('sBgOp').value) || 0.18,
+      },
+      popup: {
+        enabled: !!document.getElementById('sPopOn').checked,
+        version: document.getElementById('sPopVer').value.trim(),
+        title: document.getElementById('sPopTitle').value.trim(),
+        content: document.getElementById('sPopBody').value,
+        link: document.getElementById('sPopLink').value.trim(),
+        linkText: document.getElementById('sPopBtn').value.trim() || '查看详情',
+      },
+      maintenance: !!document.getElementById('sMaint').checked,
+      maintenanceMsg: document.getElementById('sMaintMsg').value,
+    };
+    const r = await api('/api/admin/store', { method: 'POST', body: JSON.stringify({ store: patch }) });
+    if (r.ok) XJ.toast('商店设置已保存');
+  });
+}
+
+/* =========================================================
+   2. 数据看板
+   ========================================================= */
+async function loadDash() {
+  let st = {};
+  try { const j = await api('/api/admin/dashboard'); st = j.stats || {}; } catch (e) {}
+  const d = st.distribution || {};
+  const pb = st.purchaseByLevel || {};
+  const total = st.accountTotal || 0;
+  const seg = [
+    { k: 'svip', c: '#f59e0b' }, { k: 'lvip', c: '#0ea5e9' }, { k: 'vip', c: '#8b5cf6' }, { k: 'none', c: '#646a73' }, { k: '', c: '#8f959e' },
+  ];
+  const bar = seg.map(s => {
+    const n = d[s.k] || 0; const pct = total ? (n / total * 100) : 0;
+    const name = s.k === '' ? '未设置' : (LEVELS[s.k] ? LEVELS[s.k].name : s.k);
+    return `<span style="width:${pct}%;background:${s.c}" title="${name} ${n}">${pct >= 8 ? n : ''}</span>`;
+  }).join('');
+  const legend = seg.map(s => {
+    const n = d[s.k] || 0; const name = s.k === '' ? '未设置' : (LEVELS[s.k] ? LEVELS[s.k].name : s.k);
+    return `<span><i style="background:${s.c}"></i>${name} ${n}</span>`;
+  }).join('');
+
+  document.getElementById('tab-dash').innerHTML = `
+    <div class="card panel-card anim-up">
+      <div class="section-title">核心数据</div>
+      <div class="stat-grid">
+        <div class="card stat"><div class="n c1">${total}</div><div class="t">会员账户总数</div></div>
+        <div class="card stat"><div class="n c2">${st.purchaseTotal || 0}</div><div class="t">购买记录总数</div></div>
+        <div class="card stat"><div class="n c3">${st.orderTotal || 0}</div><div class="t">订单总数</div></div>
+        <div class="card stat"><div class="n">${st.paidOrderTotal || 0}</div><div class="t">已支付订单</div></div>
+        <div class="card stat"><div class="n c1">${(st.revenue || 0).toFixed(2)}</div><div class="t">营业额 CNY</div></div>
+        <div class="card stat"><div class="n">${st.productTotal || 0}</div><div class="t">在售商品</div></div>
+        <div class="card stat"><div class="n c2">${st.couponTotal || 0}</div><div class="t">折扣券</div></div>
+        <div class="card stat"><div class="n c3">${st.cardIssued || 0}</div><div class="t">已发放卡密</div></div>
+        <div class="card stat"><div class="n">${st.cardPool || 0}</div><div class="t">卡密池中</div></div>
+      </div>
+    </div>
+
+    <div class="card panel-card anim-up d2" style="margin-top:18px">
+      <div class="section-title">会员等级分布</div>
+      <div class="dist-bar">${bar}</div>
+      <div class="dist-legend">${legend}</div>
+    </div>
+
+    <div class="card panel-card anim-up d3" style="margin-top:18px">
+      <div class="section-title">购买记录（按等级）</div>
+      <div class="stat-grid">
+        <div class="card stat"><div class="n c2">${pb.svip || 0}</div><div class="t">SVIP 购买</div></div>
+        <div class="card stat"><div class="n" style="color:#8b5cf6">${pb.vip || 0}</div><div class="t">VIP 购买</div></div>
+        <div class="card stat"><div class="n c1">${pb.lvip || 0}</div><div class="t">LVIP 购买</div></div>
+      </div>
+      <div class="hint">注：部分会员历史购买记录按当时等级（含 VIP）统计，可能与当前账户等级分布不完全一致。</div>
+    </div>`;
+}
+
+/* =========================================================
+   3. 账户管理
+   ========================================================= */
+let acctQ = '';
+let ACMTS = [];
+async function loadAccounts() {
+  let j = { list: [], total: 0 };
+  try { j = await api('/api/admin/accounts?q=' + encodeURIComponent(acctQ)); } catch (e) {}
+  ACMTS = j.list || [];
+  const f = document.getElementById('tab-accounts');
+  f.innerHTML = `
+    <div class="card panel-card anim-up">
+      <div class="section-title" style="justify-content:space-between">
+        <span style="display:flex;align-items:center;gap:9px">会员账户（${j.total || 0}）</span>
+        <a class="btn btn-primary btn-sm" href="account-admin.html">批量管理账户 →</a>
+      </div>
+      <div class="hint" style="margin-bottom:14px">需要批量修改等级 / 权限 / 积分 / 封禁？点击上方「批量管理账户」按钮，进入独立批量操作台。</div>
+      <div class="toolbar">
+        <div class="search-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>
+          <input id="acctSearch" placeholder="搜索用户名 / 邮箱 / 手机" value="${esc(acctQ)}" />
+        </div>
+        <button class="btn btn-primary btn-sm" id="acctSearchBtn">搜索</button>
+      </div>
+      ${ACMTS.length ? `
+      <table>
+        <thead><tr>
+          <th style="width:48px">ID</th><th>用户名</th><th>邮箱</th>
+          <th style="width:120px">等级</th><th style="width:80px">积分</th>
+          <th style="width:90px">状态</th><th>权限</th>
+          <th style="width:80px;text-align:right">操作</th>
+        </tr></thead>
+        <tbody>
+          ${ACMTS.map(a => `
+            <tr>
+              <td>${a.id}</td>
+              <td class="td-name">${esc(a.name)}</td>
+              <td>${esc(a.mail)}</td>
+              <td>
+                <select class="input" data-level="${a.id}" style="height:36px;padding:0 8px">
+                  ${LEVEL_OPTIONS.map(o => `<option value="${o.v}" ${a.level === o.v ? 'selected' : ''}>${o.name}</option>`).join('')}
+                </select>
+              </td>
+              <td>${a.point}</td>
+              <td>${a.banned ? '<span class="tag red">已封禁</span>' : '<span class="tag green">正常</span>'}</td>
+              <td><div class="perm-tags">${(a.perms || []).map(p => `<span class="pt">${permName(p)}</span>`).join('')}</div></td>
+              <td class="row-actions"><button class="mini" data-edit-acct="${a.id}">编辑</button><a class="mini" href="account-admin.html">批量操作</a></td>
+            </tr>`).join('')}
+        </tbody>
+      </table>` : `<div class="empty-row">没有匹配的账户</div>`}
+    </div>`;
+
+  document.getElementById('acctSearchBtn').addEventListener('click', () => { acctQ = document.getElementById('acctSearch').value.trim(); loadAccounts(); });
+  f.querySelectorAll('[data-level]').forEach(sel => sel.addEventListener('change', async () => {
+    const id = sel.dataset.level;
+    await api('/api/admin/accounts', { method: 'POST', body: JSON.stringify({ id: Number(id), patch: { level: sel.value } }) });
+    XJ.toast('等级已更新');
+  }));
+  f.querySelectorAll('[data-edit-acct]').forEach(b => b.addEventListener('click', () => openAcctModal(Number(b.dataset.editAcct))));
+}
+function permName(p) { return { buy: '可购买', comment: '可评论', view: '可浏览', ai_admin: 'XJ AI 最高权限' }[p] || p; }
+
+function openAcctModal(id) {
+  const a = ACMTS.find(x => x.id === id);
+  if (!a) return;
+  const perms = a.perms || [];
+  showModal('编辑账户 #' + id, `
+    <div class="grid2">
+      <div class="field"><label class="field-label">用户名</label><input class="input" id="eaName" value="${esc(a.name)}" /></div>
+      <div class="field"><label class="field-label">邮箱</label><input class="input" id="eaMail" value="${esc(a.mail)}" /></div>
+    </div>
+    <div class="field"><label class="field-label">等级</label>
+      <select class="input" id="eaLevel">${LEVEL_OPTIONS.map(o => `<option value="${o.v}" ${a.level === o.v ? 'selected' : ''}>${o.name}</option>`).join('')}</select>
+    </div>
+    <div class="grid2">
+      <div class="field"><label class="field-label">积分</label><input class="input" id="eaPoint" type="number" value="${a.point}" /></div>
+      <div class="field"><label class="field-label">状态</label>
+        <select class="input" id="eaBanned"><option value="0" ${!a.banned ? 'selected' : ''}>正常</option><option value="1" ${a.banned ? 'selected' : ''}>封禁</option></select>
+      </div>
+    </div>
+    <div class="field"><label class="field-label">权限</label>
+      <div style="display:flex;gap:16px">
+        ${['buy', 'comment', 'view', 'ai_admin'].map(p => `<label class="switch" style="padding:4px 0"><input type="checkbox" data-perm="${p}" ${perms.includes(p) ? 'checked' : ''}/> ${permName(p)}</label>`).join('')}
+      </div>
+    </div>`, async () => {
+    const patch = {
+      name: document.getElementById('eaName').value.trim(),
+      mail: document.getElementById('eaMail').value.trim(),
+      level: document.getElementById('eaLevel').value,
+      point: Number(document.getElementById('eaPoint').value) || 0,
+      banned: document.getElementById('eaBanned').value === '1',
+      perms: ['buy', 'comment', 'view', 'ai_admin'].filter(p => document.querySelector(`[data-perm="${p}"]`).checked),
+    };
+    const r = await api('/api/admin/accounts', { method: 'POST', body: JSON.stringify({ id, patch }) });
+    if (r.ok) { mask.classList.remove('show'); XJ.toast('账户已保存'); loadAccounts(); }
+  });
+}
+
+/* =========================================================
+   4. 商品管理（保留）
+   ========================================================= */
+function renderProducts() {
+  document.getElementById('tab-products').innerHTML = `
+    <div class="card panel-card anim-up">
+      <div class="section-title" style="justify-content:space-between">
+        <span style="display:flex;align-items:center;gap:9px">商品列表（${PRODUCTS.length}）</span>
+        <button class="btn btn-primary btn-sm" id="addBtn">+ 新增商品</button>
+      </div>
+      ${PRODUCTS.length ? `
+      <table>
+        <thead><tr>
+          <th style="width:52px"></th><th>商品名称</th><th style="width:110px">分类</th>
+          <th style="width:100px">价格</th><th style="width:100px">库存</th><th style="width:140px;text-align:right">操作</th>
+        </tr></thead>
+        <tbody>
+          ${PRODUCTS.map((p, i) => `
+            <tr>
+              <td><span class="thumb-sm" style="background:${p.color}">${p.image ? `<img src="${esc(p.image)}" alt="" style="width:100%;height:100%;object-fit:cover" />` : (p.emoji || '📦')}</span></td>
+              <td><div class="td-name">${esc(p.title)}</div><div style="font-size:12px;color:var(--text-3)">${esc(p.sub || '')}</div></td>
+              <td>${(CATS.find(c => c.id === p.cat) || {}).name || p.cat}</td>
+              <td>${Number(p.price || 0).toFixed(2)}</td>
+              <td>${totalStock(p)}</td>
+              <td><div class="row-actions">
+                <button class="mini" data-edit="${i}">编辑</button>
+                <button class="mini danger" data-del="${i}">删除</button>
+              </div></td>
+            </tr>`).join('')}
+        </tbody>
+      </table>` : `<div class="empty-row">还没有商品，点右上角新增</div>`}
+    </div>`;
+  document.getElementById('addBtn').addEventListener('click', () => openModal(null));
+  document.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => openModal(Number(b.dataset.edit))));
+  document.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', async () => {
+    const i = Number(b.dataset.del);
+    if (!confirm('确定删除「' + PRODUCTS[i].title + '」？')) return;
+    PRODUCTS.splice(i, 1);
+    await saveProducts();
+  }));
+}
+function totalStock(p) { return (p.specs && p.specs.length) ? p.specs.reduce((n, s) => n + (Number(s.stock) || 0), 0) : 0; }
+async function saveProducts() {
+  const r = await api('/api/admin/products', { method: 'POST', body: JSON.stringify({ list: PRODUCTS }) });
+  if (r.ok) { XJ.toast('商品已保存（' + r.count + ' 件）'); renderProducts(); }
+}
+let editing = null;
+function openModal(idx) {
+  editing = idx;
+  modalSave = null;
+  const p = idx === null
+    ? { id: (Math.max(0, ...PRODUCTS.map(x => x.id || 0)) + 1), cat: 'bot', title: '', sub: '', tags: [['语音调用', 'orange'], ['自由交付', 'blue']], price: 0, image: '', emoji: '📦', color: 'linear-gradient(135deg,#3b82f6,#60a5fa)', specs: [{ name: '默认规格', stock: 10 }], desc: '', rich: '' }
+    : JSON.parse(JSON.stringify(PRODUCTS[idx]));
+  document.getElementById('mTitle').textContent = idx === null ? '新增商品' : '编辑商品';
+  document.getElementById('mBody').innerHTML = `
+    <div class="grid2">
+      <div class="field"><label class="field-label">商品名称</label><input class="input" id="fTitle" value="${esc(p.title)}" placeholder="例如：测试机器人 · 入门版" /></div>
+      <div class="field"><label class="field-label">分类</label><select class="input" id="fCat">${CATS.map(c => `<option value="${c.id}" ${c.id === p.cat ? 'selected' : ''}>${c.name}</option>`).join('')}</select></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label class="field-label">副标题</label><input class="input" id="fSub" value="${esc(p.sub)}" /></div>
+      <div class="field"><label class="field-label">价格（CNY）· 规格未单独定价时用此价</label><input class="input" id="fPrice" type="number" step="0.01" value="${p.price}" /></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label class="field-label">图标 emoji（无图片时显示）</label><input class="input" id="fEmoji" value="${esc(p.emoji)}" /></div>
+      <div class="field"><label class="field-label">图标渐变色</label><input class="input" id="fColor" value="${esc(p.color)}" /></div>
+    </div>
+    <div class="field">
+      <label class="field-label">商品图片（上传后替代 emoji 显示）</label>
+      <div style="display:flex;gap:12px;align-items:center">
+        <div id="imgPreview" style="width:60px;height:60px;border-radius:10px;overflow:hidden;background:var(--surface-2,#eee);display:grid;place-items:center;flex-shrink:0">
+          ${p.image ? `<img src="${esc(p.image)}" alt="" style="width:100%;height:100%;object-fit:cover" />` : '<span style="font-size:24px">🖼️</span>'}
+        </div>
+        <input type="file" id="fImageFile" accept="image/png,image/jpeg,image/webp,image/gif" style="flex:1;font-size:13px" />
+        <button class="mini" id="fImageClear" type="button">清除</button>
+      </div>
+    </div>
+    <div class="field"><label class="field-label">标签（逗号分隔，最多 3 个）</label><input class="input" id="fTags" value="${(p.tags || []).map(t => t[0]).join(',')}" /></div>
+    <div class="field"><label class="field-label">规格（名称 / 单独价格 / 库存，价格留空则用上面统一价）</label><div id="fSpecs"></div><button class="mini" id="addSpec" style="margin-top:6px">+ 添加规格</button></div>
+    <div class="field"><label class="field-label">商品描述</label><textarea class="textarea" id="fDesc" rows="2">${esc(p.desc)}</textarea></div>
+    <div class="field" style="margin-bottom:0"><label class="field-label">详细信息（支持 HTML）</label><textarea class="textarea" id="fRich" rows="5">${esc(p.rich)}</textarea></div>`;
+  window.__draft = p;
+  renderSpecs();
+  document.getElementById('addSpec').addEventListener('click', () => { p.specs.push({ name: '新规格', stock: 10 }); renderSpecs(); });
+  const fileInput = document.getElementById('fImageFile');
+  if (fileInput) fileInput.addEventListener('change', () => {
+    const f = fileInput.files && fileInput.files[0];
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const r = await api('/api/admin/upload', { method: 'POST', body: JSON.stringify({ data: String(reader.result) }) });
+        if (r && r.ok) {
+          p.image = r.url;
+          document.getElementById('imgPreview').innerHTML = `<img src="${r.url}" alt="" style="width:100%;height:100%;object-fit:cover" />`;
+          XJ.toast('图片已上传，记得点保存');
+        } else {
+          XJ.toast((r && r.msg) || '上传失败');
+        }
+      } catch (e) { XJ.toast('上传失败，请确认服务已启动'); }
+    };
+    reader.readAsDataURL(f);
+  });
+  const clearBtn = document.getElementById('fImageClear');
+  if (clearBtn) clearBtn.addEventListener('click', () => {
+    p.image = '';
+    document.getElementById('imgPreview').innerHTML = '<span style="font-size:24px">🖼️</span>';
+  });
+  mask.classList.add('show');
+}
+function renderSpecs() {
+  const p = window.__draft;
+  const box = document.getElementById('fSpecs');
+  box.innerHTML = p.specs.map((s, i) => `
+    <div class="spec-row"><input class="input" data-sn="${i}" value="${esc(s.name)}" placeholder="规格名称" />
+      <input class="input w80" data-sp="${i}" type="number" step="0.01" value="${(s.price === undefined || s.price === null) ? '' : s.price}" placeholder="价格" title="留空则用商品统一价" />
+      <input class="input w80" data-ss="${i}" type="number" value="${s.stock}" placeholder="库存" />
+      <button class="mini danger" data-sd="${i}">删除</button></div>`).join('');
+  box.querySelectorAll('[data-sn]').forEach(el => el.addEventListener('input', () => { p.specs[el.dataset.sn].name = el.value; }));
+  box.querySelectorAll('[data-sp]').forEach(el => el.addEventListener('input', () => {
+    const v = String(el.value).trim();
+    if (v === '') delete p.specs[el.dataset.sp].price; else p.specs[el.dataset.sp].price = Number(v) || 0;
+  }));
+  box.querySelectorAll('[data-ss]').forEach(el => el.addEventListener('input', () => { p.specs[el.dataset.ss].stock = Number(el.value) || 0; }));
+  box.querySelectorAll('[data-sd]').forEach(el => el.addEventListener('click', () => { p.specs.splice(Number(el.dataset.sd), 1); renderSpecs(); }));
+}
+document.getElementById('mSave').addEventListener('click', async () => {
+  if (!modalSave) {
+    const p = window.__draft;
+    p.title = document.getElementById('fTitle').value.trim();
+    p.cat = document.getElementById('fCat').value;
+    p.sub = document.getElementById('fSub').value.trim();
+    p.price = Number(document.getElementById('fPrice').value) || 0;
+    p.emoji = document.getElementById('fEmoji').value.trim() || '📦';
+    p.color = document.getElementById('fColor').value.trim();
+    p.desc = document.getElementById('fDesc').value;
+    p.rich = document.getElementById('fRich').value;
+    p.tags = document.getElementById('fTags').value.split(/[,，]/).map(s => s.trim()).filter(Boolean).slice(0, 3).map((t, i) => [t, TAG_COLORS[i] || 'blue']);
+    if (!p.title) { XJ.toast('请填写商品名称'); return; }
+    if (editing === null) PRODUCTS.push(p); else PRODUCTS[editing] = p;
+    mask.classList.remove('show');
+    await saveProducts();
+  }
+});
+
+/* =========================================================
+   4.1 分类管理
+   ========================================================= */
+function renderCategories() {
+  const box = document.getElementById('tab-categories');
+  box.innerHTML = `
+    <div class="card panel-card anim-up">
+      <div class="section-title" style="justify-content:space-between">
+        <span style="display:flex;align-items:center;gap:9px">商品分类（${CATS.length}）</span>
+        <button class="btn btn-primary btn-sm" id="addCat">+ 新增分类</button>
+      </div>
+      ${CATS.length ? `
+      <table>
+        <thead><tr>
+          <th style="width:170px">标识 ID（英文）</th><th>分类名称</th>
+          <th style="width:130px">图标</th><th style="width:90px">商品数</th><th style="width:120px;text-align:right">操作</th>
+        </tr></thead>
+        <tbody>
+          ${CATS.map((c, i) => `
+            <tr>
+              <td><input class="input" data-ci="${i}" data-f="id" value="${esc(c.id)}" /></td>
+              <td><input class="input" data-ci="${i}" data-f="name" value="${esc(c.name)}" /></td>
+              <td><select class="input" data-ci="${i}" data-f="icon">
+                ${CAT_ICONS.map(k => `<option value="${k}" ${k === (c.icon || 'grid') ? 'selected' : ''}>${k}</option>`).join('')}
+              </select></td>
+              <td style="color:var(--text-3)">${PRODUCTS.filter(p => p.cat === c.id).length}</td>
+              <td style="text-align:right"><button class="mini danger" data-cdel="${i}">删除</button></td>
+            </tr>`).join('')}
+        </tbody>
+      </table>` : '<div class="empty-row">还没有分类，点右上角新增</div>'}
+      <div class="modal-foot" style="justify-content:flex-start;margin-top:14px">
+        <button class="btn btn-primary" id="catSave">保存分类</button>
+        <span style="font-size:12.5px;color:var(--text-3)">标识 ID 必须与商品的「分类」值一致，改名不会自动迁移已有商品</span>
+      </div>
+    </div>`;
+
+  box.querySelectorAll('[data-ci]').forEach(el => {
+    const handler = () => { const i = Number(el.dataset.ci); CATS[i][el.dataset.f] = el.value.trim(); };
+    el.addEventListener('input', handler);
+    el.addEventListener('change', handler);
+  });
+
+  const addBtn = document.getElementById('addCat');
+  if (addBtn) addBtn.addEventListener('click', () => {
+    let n = CATS.length + 1, id = 'cat' + n;
+    while (CATS.some(c => c.id === id)) id = 'cat' + (++n);
+    CATS.push({ id, name: '新分类', icon: 'grid' });
+    renderCategories();
+    XJ.toast('已新增，记得点保存');
+  });
+
+  box.querySelectorAll('[data-cdel]').forEach(el => el.addEventListener('click', () => {
+    const i = Number(el.dataset.cdel);
+    const used = PRODUCTS.filter(p => p.cat === CATS[i].id).length;
+    if (used) { XJ.toast(`「${CATS[i].name}」下还有 ${used} 件商品，请先移到其他分类再删除`); return; }
+    if (!confirm(`确定删除分类「${CATS[i].name}」？`)) return;
+    CATS.splice(i, 1);
+    renderCategories();
+  }));
+
+  const saveBtn = document.getElementById('catSave');
+  if (saveBtn) saveBtn.addEventListener('click', saveCategories);
+}
+
+async function saveCategories() {
+  for (const c of CATS) {
+    if (!String(c.id || '').trim()) { XJ.toast('分类标识不能为空'); return; }
+    if (!String(c.name || '').trim()) { XJ.toast('分类名称不能为空'); return; }
+  }
+  const ids = CATS.map(c => String(c.id).trim());
+  if (new Set(ids).size !== ids.length) { XJ.toast('分类标识不能重复'); return; }
+  const r = await api('/api/admin/categories', { method: 'POST', body: JSON.stringify({ list: CATS }) });
+  if (r.ok) { XJ.toast('分类已保存（' + r.count + ' 个）'); renderCategories(); }
+  else XJ.toast(r.msg || '保存失败');
+}
+
+/* =========================================================
+   5. 折扣券管理
+   ========================================================= */
+let COUPONS = [];
+async function loadCoupons() {
+  let j = { list: [] };
+  try { j = await api('/api/admin/coupons'); } catch (e) {}
+  COUPONS = j.list || [];
+  const f = document.getElementById('tab-coupons');
+  f.innerHTML = `
+    <div class="card panel-card anim-up">
+      <div class="section-title" style="justify-content:space-between">
+        <span style="display:flex;align-items:center;gap:9px">折扣券（${COUPONS.length}）</span>
+        <button class="btn btn-primary btn-sm" id="addCoupon">+ 新增券</button>
+      </div>
+      ${COUPONS.length ? `
+      <table>
+        <thead><tr><th>券码</th><th>名称</th><th>类型</th><th style="width:90px">面值</th><th style="width:90px">门槛</th><th style="width:110px">限等级</th><th style="width:90px">已用/总</th><th style="width:90px">状态</th><th style="width:140px;text-align:right">操作</th></tr></thead>
+        <tbody>
+          ${COUPONS.map((c, i) => `
+            <tr>
+              <td class="td-name" style="font-family:ui-monospace,Consolas,monospace">${esc(c.code)}</td>
+              <td>${esc(c.name)}</td>
+              <td>${c.type === 'rate' ? '折扣率' : '立减'}</td>
+              <td>${c.type === 'rate' ? (Number(c.value) * 10).toFixed(1) + ' 折' : '¥' + Number(c.value).toFixed(0)}</td>
+              <td>${c.minSpend ? '¥' + c.minSpend : '无'}</td>
+              <td>${(LEVELS[c.level] && c.level) ? LEVELS[c.level].name : '全部'}</td>
+              <td>${c.used || 0}/${c.total || 0}</td>
+              <td>${c.active ? '<span class="tag green">启用</span>' : '<span class="tag red">停用</span>'}</td>
+              <td class="row-actions"><button class="mini" data-edit-c="${i}">编辑</button><button class="mini danger" data-del-c="${i}">删除</button></td>
+            </tr>`).join('')}
+        </tbody>
+      </table>` : `<div class="empty-row">还没有折扣券</div>`}
+    </div>`;
+  document.getElementById('addCoupon').addEventListener('click', () => openCouponModal(null));
+  f.querySelectorAll('[data-edit-c]').forEach(b => b.addEventListener('click', () => openCouponModal(Number(b.dataset.editC))));
+  f.querySelectorAll('[data-del-c]').forEach(b => b.addEventListener('click', async () => {
+    if (!confirm('确定删除该折扣券？')) return;
+    COUPONS.splice(Number(b.dataset.delC), 1);
+    const r = await api('/api/admin/coupons', { method: 'POST', body: JSON.stringify({ list: COUPONS }) });
+    if (r.ok) { XJ.toast('已删除'); loadCoupons(); }
+  }));
+}
+function openCouponModal(idx) {
+  const c = idx === null ? { code: 'XJ-' + Math.random().toString(36).slice(2, 8).toUpperCase(), name: '', type: 'amount', value: 10, minSpend: 0, level: '', total: 100, used: 0, expiresAt: '2026-12-31', active: true } : JSON.parse(JSON.stringify(COUPONS[idx]));
+  showModal(idx === null ? '新增折扣券' : '编辑折扣券', `
+    <div class="grid2">
+      <div class="field"><label class="field-label">券码</label><input class="input" id="cCode" value="${esc(c.code)}" /></div>
+      <div class="field"><label class="field-label">名称</label><input class="input" id="cName" value="${esc(c.name)}" /></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label class="field-label">类型</label><select class="input" id="cType"><option value="amount" ${c.type === 'amount' ? 'selected' : ''}>立减金额</option><option value="rate" ${c.type === 'rate' ? 'selected' : ''}>折扣率</option></select></div>
+      <div class="field"><label class="field-label">面值（金额 ¥ 或 折扣率 0-1）</label><input class="input" id="cValue" type="number" step="0.01" value="${c.value}" /></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label class="field-label">使用门槛（0 无门槛）</label><input class="input" id="cMin" type="number" value="${c.minSpend || 0}" /></div>
+      <div class="field"><label class="field-label">限会员等级</label><select class="input" id="cLevel"><option value="" ${!c.level ? 'selected' : ''}>全部</option>${LEVEL_OPTIONS.filter(o => o.v).map(o => `<option value="${o.v}" ${c.level === o.v ? 'selected' : ''}>${o.name}</option>`).join('')}</select></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label class="field-label">发放总量</label><input class="input" id="cTotal" type="number" value="${c.total || 0}" /></div>
+      <div class="field"><label class="field-label">过期时间</label><input class="input" id="cExp" value="${esc(c.expiresAt)}" placeholder="2026-12-31" /></div>
+    </div>
+    <label class="switch"><input type="checkbox" id="cActive" ${c.active ? 'checked' : ''}/> 启用该券</label>`, async () => {
+    c.code = document.getElementById('cCode').value.trim();
+    c.name = document.getElementById('cName').value.trim();
+    c.type = document.getElementById('cType').value;
+    c.value = Number(document.getElementById('cValue').value) || 0;
+    c.minSpend = Number(document.getElementById('cMin').value) || 0;
+    c.level = document.getElementById('cLevel').value;
+    c.total = Number(document.getElementById('cTotal').value) || 0;
+    c.expiresAt = document.getElementById('cExp').value.trim();
+    c.active = document.getElementById('cActive').checked;
+    if (idx === null) COUPONS.push(c); else COUPONS[idx] = c;
+    const r = await api('/api/admin/coupons', { method: 'POST', body: JSON.stringify({ list: COUPONS }) });
+    if (r.ok) { mask.classList.remove('show'); XJ.toast('折扣券已保存'); loadCoupons(); }
+  });
+}
+
+/* =========================================================
+   6. 卡密管理
+   ========================================================= */
+async function loadCards() {
+  let j = { batches: [], issued: [] };
+  try { j = await api('/api/admin/cards'); } catch (e) {}
+  const batches = j.batches || [];
+  const issued = j.issued || [];
+  const f = document.getElementById('tab-cards');
+  f.innerHTML = `
+    <div class="card panel-card anim-up">
+      <div class="section-title" style="justify-content:space-between">
+        <span style="display:flex;align-items:center;gap:9px">卡密池（${batches.reduce((n, b) => n + (b.keys || []).length, 0)} 张未发放）</span>
+        <button class="btn btn-primary btn-sm" id="genCard">+ 生成卡密批次</button>
+      </div>
+      ${batches.length ? batches.map((b, bi) => {
+        const unused = (b.keys || []).filter(k => !k.used).length;
+        return `<div class="batch">
+          <div class="batch-head" data-batch="${bi}">
+            <span class="bn">${esc(b.name)}</span>
+            <span class="tag blue">${unused}/${b.keys.length} 可用</span>
+            <span style="font-size:12px;color:var(--text-3)">${b.createdAt}</span>
+            <button class="mini danger" data-del-batch="${bi}">删除批次</button>
+          </div>
+          <div class="batch-keys" style="display:none" id="bk-${bi}">
+            ${(b.keys || []).map(k => `<div class="k ${k.used ? 'used' : ''}"><span>${esc(k.code)}</span>${k.used ? '<span class="u">已发放</span>' : ''}</div>`).join('')}
+          </div>
+        </div>`;
+      }).join('') : `<div class="empty-row">还没有卡密批次</div>`}
+    </div>
+
+    <div class="card panel-card anim-up d2">
+      <div class="section-title">已发放卡密（来自订单，共 ${issued.length} 张）</div>
+      ${issued.length ? `<div class="batch-keys">${issued.slice(0, 200).map(k => `<div class="k used"><span>${esc(k.code)}</span><span class="u">${esc(k.orderNo)}</span></div>`).join('')}</div>` : `<div class="empty-row">暂无已发放卡密</div>`}
+    </div>`;
+  f.querySelectorAll('[data-batch]').forEach(h => h.addEventListener('click', e => {
+    if (e.target.closest('[data-del-batch]')) return;
+    const box = document.getElementById('bk-' + h.dataset.batch);
+    box.style.display = box.style.display === 'none' ? 'grid' : 'none';
+  }));
+  f.querySelectorAll('[data-del-batch]').forEach(b => b.addEventListener('click', async () => {
+    if (!confirm('确定删除该批次？此操作不可恢复')) return;
+    batches.splice(Number(b.dataset.delBatch), 1);
+    const r = await api('/api/admin/cards', { method: 'POST', body: JSON.stringify({ batches }) });
+    if (r.ok) { XJ.toast('批次已删除'); loadCards(); }
+  }));
+  document.getElementById('genCard').addEventListener('click', () => {
+    showModal('生成卡密批次', `
+      <div class="field"><label class="field-label">批次名称</label><input class="input" id="gbName" placeholder="例如：双十一福利批次" /></div>
+      <div class="field"><label class="field-label">生成数量</label><input class="input" id="gbCount" type="number" value="20" min="1" max="500" /></div>`, async () => {
+      const r = await api('/api/admin/cards/generate', { method: 'POST', body: JSON.stringify({ name: document.getElementById('gbName').value.trim(), count: Number(document.getElementById('gbCount').value) || 20 }) });
+      if (r.ok) { mask.classList.remove('show'); XJ.toast('已生成 ' + (r.batch.keys.length) + ' 张'); loadCards(); }
+    });
+  });
+}
+
+/* =========================================================
+   7. 订单管理（保留）
+   ========================================================= */
+const ST = { paid: ['已完成', 'green'], pending: ['待支付', 'orange'], delivering: ['交付中', 'blue'], refunded: ['已退款', 'red'] };
+function renderOrders() {
+  document.getElementById('tab-orders').innerHTML = `
+    <div class="card panel-card anim-up">
+      <div class="section-title">订单记录（${ORDERS.length}）</div>
+      ${ORDERS.length ? `
+      <table>
+        <thead><tr><th>订单号</th><th>联系方式</th><th style="width:90px">原价</th><th style="width:90px">折扣</th><th style="width:90px">实付</th><th style="width:100px">支付</th><th style="width:90px">状态</th><th style="width:150px">时间</th></tr></thead>
+        <tbody>
+          ${ORDERS.map(o => { const s = ST[o.status] || ST.paid; return `<tr>
+              <td style="font-family:ui-monospace,Consolas,monospace;font-size:12.5px;color:var(--text)">${esc(o.no)}</td>
+              <td>${esc(o.email || '-')}</td>
+              <td>${Number(o.originalTotal || o.total || 0).toFixed(2)}</td>
+              <td>${(o.discount > 0) ? '-' + Number(o.discount).toFixed(2) : '-'}</td>
+              <td>${Number(o.total || 0).toFixed(2)}</td>
+              <td>${esc(o.pay || '-')}</td>
+              <td><span class="tag ${s[1]}">${s[0]}</span></td>
+              <td>${esc(o.time || '-')}</td>
+            </tr>`; }).join('')}
+        </tbody>
+      </table>` : `<div class="empty-row">还没有订单</div>`}
+    </div>`;
+}
+
+/* =========================================================
+   8. 商品互动
+   ========================================================= */
+async function loadInteractions() {
+  let data = {};
+  try { const j = await api('/api/admin/interactions'); data = j.data || {}; } catch (e) {}
+  const ids = Object.keys(data).sort((a, b) => Number(a) - Number(b));
+  const f = document.getElementById('tab-interactions');
+  f.innerHTML = `
+    <div class="card panel-card anim-up">
+      <div class="section-title">商品互动数据</div>
+      ${ids.length ? `
+      <table>
+        <thead><tr><th style="width:60px">商品ID</th><th style="width:90px">浏览</th><th style="width:90px">点赞</th><th style="width:90px">评论</th><th style="width:140px;text-align:right">操作</th></tr></thead>
+        <tbody>
+          ${ids.map(id => { const it = data[id]; return `<tr>
+              <td>#${id}</td>
+              <td>${it.views || 0}</td>
+              <td>${it.likes || 0}</td>
+              <td>${(it.comments || []).length}</td>
+              <td class="row-actions"><button class="mini" data-view-i="${id}">查看</button><button class="mini danger" data-reset-i="${id}">重置</button></td>
+            </tr>`; }).join('')}
+        </tbody>
+      </table>` : `<div class="empty-row">暂无互动数据</div>`}
+      <div id="iDetail"></div>
+    </div>`;
+  f.querySelectorAll('[data-view-i]').forEach(b => b.addEventListener('click', () => {
+    const it = data[b.dataset.viewI] || {};
+    const box = document.getElementById('iDetail');
+    box.innerHTML = `
+      <div class="hr"></div>
+      <div class="section-title">商品 #${b.dataset.viewI} 的评论（${ (it.comments || []).length }）</div>
+      ${(it.comments || []).length ? (it.comments || []).map((c, ci) => `
+        <div class="cmt" style="display:flex;gap:10px;padding:12px 14px;background:var(--surface-2);border-radius:var(--radius);margin-bottom:10px">
+          <div class="c-avatar" style="width:32px;height:32px;border-radius:50%;background:var(--primary-soft);color:var(--primary);display:grid;place-items:center;font-weight:700">${esc(String(c.name || '匿').slice(0, 1).toUpperCase())}</div>
+          <div style="flex:1"><div><b>${esc(c.name)}</b> <span style="color:var(--text-3);font-size:12px">${esc(c.time)}</span></div><div style="color:var(--text-2);font-size:13.5px;margin-top:4px">${esc(c.text)}</div></div>
+          <button class="mini danger" data-del-cmt="${b.dataset.viewI}:${ci}">删</button>
+        </div>`).join('') : '<div class="empty-row">暂无评论</div>'}`;
+    box.querySelectorAll('[data-del-cmt]').forEach(x => x.addEventListener('click', async () => {
+      const [pid, ci] = x.dataset.delCmt.split(':');
+      await api('/api/admin/interactions', { method: 'POST', body: JSON.stringify({ action: 'deleteComment', productId: Number(pid), index: Number(ci) }) });
+      XJ.toast('评论已删除'); loadInteractions();
+    }));
+  }));
+  f.querySelectorAll('[data-reset-i]').forEach(b => b.addEventListener('click', async () => {
+    if (!confirm('确定重置该商品的互动数据（浏览/点赞/评论）？')) return;
+    await api('/api/admin/interactions', { method: 'POST', body: JSON.stringify({ action: 'reset', productId: Number(b.dataset.resetI) }) });
+    XJ.toast('已重置'); loadInteractions();
+  }));
+}
+
+/* =========================================================
+   8.5 XJ AI 配置
+   ========================================================= */
+function renderAi() {
+  const c = CONFIG;
+  const LEVEL_OPTIONS_AI = [
+    { v: '', n: '不限（所有人可用）' },
+    { v: 'none', n: '无折扣及以上' },
+    { v: 'lvip', n: 'LVIP 及以上' },
+    { v: 'vip', n: 'VIP 及以上' },
+    { v: 'svip', n: '仅 SVIP' },
+  ];
+  const meta = c.aiModelMeta || {};
+  const metaRows = Object.keys(meta).map(k => {
+    const m = meta[k] || {};
+    return `<tr>
+      <td><b>${esc(k)}</b></td>
+      <td>${esc(m.requests != null ? m.requests : '-')}</td>
+      <td>${esc(m.tokens || '-')}</td>
+      <td>${esc(m.actual || '-')}</td>
+      <td>${esc(m.standard || '-')}</td>
+      <td style="color:var(--text-3)">${esc(m.note || '')}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('tab-ai').innerHTML = `
+    <div class="card panel-card anim-up">
+      <div class="section-title">XJ AI 接口</div>
+      <div class="grid2">
+        <div class="field"><label class="field-label">中转地址 Base URL</label><input class="input" id="aiBase" value="${esc(c.aiBaseUrl || '')}" /></div>
+        <div class="field"><label class="field-label">API Key</label><input class="input" id="aiKey" type="password" value="" placeholder="${c.aiKeySet ? '已配置（留空表示不修改）' : '尚未配置，请输入密钥'}" autocomplete="off" /></div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label class="field-label">默认模型</label><input class="input" id="aiModel" value="${esc(c.aiModel || '')}" /></div>
+        <div class="field"><label class="field-label">降级模型链（逗号分隔）</label><input class="input" id="aiFallbacks" value="${esc(c.aiFallbackModels || '')}" /></div>
+      </div>
+      <div class="field"><label class="field-label">模型白名单（仅这些模型可被调用，逗号分隔）</label>
+        <input class="input" id="aiAllow" value="${esc(c.aiAllowModels || '')}" />
+        <div class="hint">实测 gpt-5.5 / gpt-5.6 / gpt-5.6-luna 返回 502/503，已从白名单剔除；白名单外的模型前端不展示、服务端也不放行</div>
+      </div>
+      <div class="field"><label class="field-label">系统提示词</label><textarea class="textarea" id="aiSystem" rows="3">${esc(c.aiSystemPrompt || '')}</textarea>
+        <div class="hint">服务端会在此基础上自动追加「当前商品目录」「用户身份」「商品推荐格式」，确保 AI 只推荐真实在售商品</div>
+      </div>
+      <div class="modal-foot" style="justify-content:flex-start">
+        <button class="btn btn-primary" id="aiSave">保存配置</button>
+      </div>
+    </div>
+
+    <div class="card panel-card anim-up">
+      <div class="section-title">权限与准入</div>
+      <div class="grid2">
+        <div class="field"><label class="field-label">使用门槛（XJ AI 最低等级）</label>
+          <select class="input" id="aiMinLevel">
+            ${LEVEL_OPTIONS_AI.map(o => `<option value="${o.v}" ${String(c.aiMinLevel || 'vip') === o.v ? 'selected' : ''}>${o.n}</option>`).join('')}
+          </select>
+          <div class="hint">默认「VIP 及以上」。服务端强制校验，前端只做展示与引导</div>
+        </div>
+        <div class="field"><label class="field-label">最高权限权限位</label>
+          <input class="input" id="aiAdminPerm" value="${esc(c.aiAdminPerm || 'ai_admin')}" />
+          <div class="hint">账号带上该权限位即可解锁经营洞察（销量/营收/库存/会员分布），在「账户管理 → 权限」里勾选</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card panel-card anim-up">
+      <div class="section-title">AI 总开关与模型开关</div>
+      <label class="switch"><input type="checkbox" id="aiEnabled" ${c.aiEnabled === false ? '' : 'checked'}/> 启用 XJ AI（关闭后前台所有用户均无法对话，经营洞察与推荐同步停用）</label>
+      <div class="hint" style="margin:10px 0 6px">逐模型启用 / 停用：停用的模型前台下拉不再展示、服务端也不路由</div>
+      <div id="aiModelSwitches" style="display:flex;flex-direction:column;gap:6px">
+        ${(c.aiAllowModels || '').split(',').map(s => s.trim()).filter(Boolean).map(id => {
+          const meta = (c.aiModelMeta || {})[id] || {};
+          const off = ((c.aiDisabledModels || '').split(',').map(x => x.trim()).filter(Boolean)).includes(id);
+          const grp = meta.group ? ' <span style="color:var(--text-3);font-size:12px">· ' + esc(meta.group) + '</span>' : '';
+          const note = meta.label ? ' <span style="color:var(--text-3);font-size:12px">' + esc(meta.label) + '</span>' : '';
+          return '<label class="switch switch-row"><input type="checkbox" data-aimodel="' + esc(id) + '" ' + (off ? '' : 'checked') + '/>' +
+            '<span style="line-height:1.4"><b>' + esc(id) + '</b>' + grp + note + '</span></label>';
+        }).join('')}
+      </div>
+      <div class="modal-foot" style="justify-content:flex-start">
+        <button class="btn btn-primary" id="aiSwitchSave">保存开关</button>
+      </div>
+    </div>
+
+    <div class="card panel-card anim-up">
+      <div class="section-title">模型用量与计费（仅供参考，修改后写回 config.json）</div>
+      <div style="overflow-x:auto">
+        <table class="table">
+          <thead><tr><th>模型</th><th>请求数</th><th>Token</th><th>实际费用</th><th>标准费用</th><th>备注</th></tr></thead>
+          <tbody>${metaRows || '<tr><td colspan="6" style="color:var(--text-3)">暂无数据</td></tr>'}</tbody>
+        </table>
+      </div>
+    </div>`;
+
+  document.getElementById('aiSave').addEventListener('click', async () => {
+    const patch = {
+      aiBaseUrl: document.getElementById('aiBase').value.trim(),
+      aiApiKey: document.getElementById('aiKey').value.trim(),
+      aiModel: document.getElementById('aiModel').value.trim(),
+      aiFallbackModels: document.getElementById('aiFallbacks').value.trim(),
+      aiAllowModels: document.getElementById('aiAllow').value.trim(),
+      aiSystemPrompt: document.getElementById('aiSystem').value,
+      aiMinLevel: document.getElementById('aiMinLevel').value,
+      aiAdminPerm: document.getElementById('aiAdminPerm').value.trim() || 'ai_admin',
+    };
+    if (!patch.aiApiKey) delete patch.aiApiKey; /* 留空表示不修改 */
+    const r = await api('/api/admin/config', { method: 'POST', body: JSON.stringify({ config: patch }) });
+    if (r.ok) {
+      XJ.toast('XJ AI 配置已保存并生效');
+      CONFIG = Object.assign({}, CONFIG, patch);
+      document.getElementById('aiKey').value = '';
+    }
+  });
+
+  /* AI 总开关 + 逐模型开关：aiEnabled 控制整个 XJ AI，aiDisabledModels 记录被停用的模型 */
+  document.getElementById('aiSwitchSave').addEventListener('click', async () => {
+    const enabled = document.getElementById('aiEnabled').checked;
+    const disabled = [];
+    document.querySelectorAll('#aiModelSwitches input[data-aimodel]').forEach(chk => {
+      if (!chk.checked) disabled.push(chk.getAttribute('data-aimodel'));
+    });
+    const patch = { aiEnabled: enabled, aiDisabledModels: disabled.join(',') };
+    const r = await api('/api/admin/config', { method: 'POST', body: JSON.stringify({ config: patch }) });
+    if (r.ok) {
+      XJ.toast('AI 开关已保存并实时生效' + (enabled ? '' : '（XJ AI 已关闭）'));
+      CONFIG = Object.assign({}, CONFIG, patch);
+    } else {
+      XJ.toast('保存失败：' + (r.msg || '未知错误'));
+    }
+  });
+}
+
+/* =========================================================
+   9. 支付配置（保留）
+   ========================================================= */
+function renderPay() {
+  const c = CONFIG;
+  document.getElementById('tab-pay').innerHTML = `
+    <div class="card panel-card anim-up">
+      <div class="section-title">支付接口</div>
+      <div class="grid2">
+        <div class="field"><label class="field-label">网关地址</label><input class="input" id="cApi" value="${esc(c.apiBase)}" /></div>
+        <div class="field"><label class="field-label">提交路径</label><input class="input" id="cPath" value="${esc(c.submitPath)}" /></div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label class="field-label">商户号 PID</label><input class="input" id="cPid" value="${esc(c.pid)}" /></div>
+        <div class="field"><label class="field-label">站点名称</label><input class="input" id="cSite" value="${esc(c.sitename)}" /></div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label class="field-label">签名方式</label><select class="input" id="cSign">
+          <option value="MD5" ${c.signType === 'MD5' ? 'selected' : ''}>MD5（签名 32 位）</option>
+          <option value="RSA" ${c.signType === 'RSA' ? 'selected' : ''}>RSA（签名 344 位，需后台开通）</option>
+        </select><div class="hint">若网关提示「sign 超过最大长度 32」，说明该商户只支持 MD5</div></div>
+        <div class="field"><label class="field-label">RSA 算法</label><select class="input" id="cAlgo">
+          <option value="RSA-SHA256" ${c.rsaAlgo === 'RSA-SHA256' ? 'selected' : ''}>RSA-SHA256</option>
+          <option value="RSA-SHA1" ${c.rsaAlgo === 'RSA-SHA1' ? 'selected' : ''}>RSA-SHA1</option>
+        </select></div>
+      </div>
+      <div class="field"><label class="field-label">MD5 加签密钥</label><input class="input" id="cKey" type="password" value="" placeholder="${c.keySet ? '已配置（留空表示不修改）' : '尚未配置，请输入密钥'}" autocomplete="off" /><div class="hint">仅保存在服务端，不回传到浏览器；留空则保持原密钥不变，提交后即时生效无需重启</div></div>
+      <div class="grid2">
+        <div class="field"><label class="field-label">异步回调地址 notify_url</label><input class="input" id="cNotify" value="${esc(c.notifyUrl)}" placeholder="留空则自动用当前站点地址" /></div>
+        <div class="field"><label class="field-label">同步返回地址 return_url</label><input class="input" id="cReturn" value="${esc(c.returnUrl)}" placeholder="留空则跳回订单页" /></div>
+      </div>
+      <label class="switch"><input type="checkbox" id="cMock" ${c.mock ? 'checked' : ''}/> 本地演练模式（不请求真实网关，直接标记已支付）</label>
+      <div class="modal-foot" style="justify-content:flex-start">
+        <button class="btn btn-primary" id="cSave">保存配置</button>
+        <button class="btn btn-outline" id="cPing">测试连接</button>
+      </div>
+      <div class="hint" id="cState"></div>
+    </div>`;
+  document.getElementById('cSave').addEventListener('click', async () => {
+    const patch = {
+      apiBase: document.getElementById('cApi').value.trim(), submitPath: document.getElementById('cPath').value.trim(),
+      pid: document.getElementById('cPid').value.trim(), sitename: document.getElementById('cSite').value.trim(),
+      signType: document.getElementById('cSign').value, rsaAlgo: document.getElementById('cAlgo').value,
+      key: document.getElementById('cKey').value.trim(), notifyUrl: document.getElementById('cNotify').value.trim(),
+      returnUrl: document.getElementById('cReturn').value.trim(), mock: document.getElementById('cMock').checked,
+    };
+    /* 密钥留空表示「不修改」，避免误清空已配置的加签密钥 */
+    if (!patch.key) delete patch.key;
+    const r = await api('/api/admin/config', { method: 'POST', body: JSON.stringify({ config: patch }) });
+    if (r.ok) {
+      XJ.toast('配置已保存并生效');
+      CONFIG = Object.assign({}, CONFIG, patch);
+      document.getElementById('cKey').value = '';
+    }
+  });
+  document.getElementById('cPing').addEventListener('click', async () => {
+    const r = await fetch('/api/ping').then(x => x.json());
+    document.getElementById('cState').innerHTML =
+      `当前生效：签名 <b>${r.signType}</b> ｜ 商户号 <b>${r.pid}</b> ｜ 网关 <b>${r.apiBase}</b> ｜ ` +
+      `MD5 密钥 ${r.md5KeySet ? '已配置' : '未配置'} ｜ 私钥 ${r.privateKeySet ? '已加载' : '未加载'} ｜ ` +
+      `平台公钥 ${r.gatewayPublicKeySet ? '已加载' : '未加载'} ｜ 演练模式 ${r.mock ? '开' : '关'}`;
+  });
+}
+
+/* =========================================================
+   10. 账户安全（保留）
+   ========================================================= */
+function renderAccount() {
+  document.getElementById('tab-account').innerHTML = `
+    <div class="card panel-card anim-up" style="max-width:460px">
+      <div class="section-title">修改管理员密码</div>
+      <div class="field"><label class="field-label">原密码</label><input class="input" id="pOld" type="password" /></div>
+      <div class="field"><label class="field-label">新密码</label><input class="input" id="pNew" type="password" placeholder="至少 6 位" /></div>
+      <div class="field"><label class="field-label">确认新密码</label><input class="input" id="pNew2" type="password" /></div>
+      <button class="btn btn-primary" id="pSave">保存</button>
+      <div class="hint" style="margin-top:14px">管理员账号固定为「星际Stellar」，不可修改。修改密码后需要重新登录。</div>
+    </div>`;
+  document.getElementById('pSave').addEventListener('click', async () => {
+    const oldPass = document.getElementById('pOld').value, newPass = document.getElementById('pNew').value, newPass2 = document.getElementById('pNew2').value;
+    if (newPass !== newPass2) { XJ.toast('两次输入的新密码不一致'); return; }
+    try {
+      const r = await api('/api/admin/password', { method: 'POST', body: JSON.stringify({ oldPass, newPass }) });
+      if (r.ok) { XJ.toast(r.msg || '已更新'); setTimeout(logout, 800); }
+    } catch (e) {}
+  });
+}
+
+/* ---------- 启动 ---------- */
+if (TOKEN) enter(); else gate.style.display = '';
+XJ.init({ active: 'admin' });
+</script>
+</body>
+</html>

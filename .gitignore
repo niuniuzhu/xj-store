@@ -1,0 +1,9 @@
+server/keys/
+server/config.json
+server/data/
+.env
+
+# 本地运行产物
+server/*.log
+server/*.bak.*
+ab_out.txt

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>卡密兑换 · XJ Store</title>
+<script src="assets/head.js"></script>
+<link rel="stylesheet" href="assets/base.css" />
+<style>
+  .wrap { width: 100%; max-width: 720px; margin: 0 auto; padding: 26px 22px 0; }
+  .page-title { display: flex; align-items: center; gap: 9px; font-size: 22px; font-weight: 800; padding: 6px 2px 18px; }
+  .page-title::before { content: ""; width: 3px; height: 20px; border-radius: 2px; background: var(--primary); }
+
+  .profile { display: flex; align-items: center; gap: 16px; padding: 22px 24px; margin-bottom: 18px; }
+  .profile .ava { width: 56px; height: 56px; border-radius: 16px; display: grid; place-items: center; font-size: 26px; background: var(--primary-soft); color: var(--primary); flex-shrink: 0; }
+  .profile .info { flex: 1; min-width: 0; }
+  .profile .nm { font-size: 17px; font-weight: 700; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .profile .meta { font-size: 13px; color: var(--text-3); margin-top: 6px; display: flex; gap: 18px; flex-wrap: wrap; }
+  .profile .meta b { color: var(--text); font-weight: 700; }
+  .lvchip { padding: 2px 10px; border-radius: 999px; font-size: 12px; color: #fff; font-weight: 600; }
+
+  .block { padding: 22px 24px; margin-bottom: 18px; }
+  .redeem-row { display: flex; gap: 10px; }
+  .redeem-row .input { flex: 1; letter-spacing: 1px; text-transform: uppercase; }
+  .redeem-msg { font-size: 13px; margin-top: 12px; min-height: 18px; }
+  .redeem-msg.ok { color: var(--green); }
+  .redeem-msg.err { color: #ef4444; }
+  .hint { font-size: 12.5px; color: var(--text-3); margin-top: 10px; line-height: 1.6; }
+
+  .hist { margin-top: 6px; }
+  .hist-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .hist-item:last-child { border-bottom: none; }
+  .hist-item .hi-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; font-weight: 600; }
+  .hist-item .hi-desc { color: var(--primary); font-size: 13px; font-weight: 600; }
+  .hist-item .hi-time { margin-left: auto; font-size: 12px; color: var(--text-3); }
+  .empty { font-size: 13px; color: var(--text-3); padding: 14px 0; }
+
+  .login-tip { text-align: center; padding: 40px 0; color: var(--text-3); }
+  .login-tip a { color: var(--primary); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<div id="header"></div>
+
+<div class="wrap">
+  <div class="page-title">卡密兑换</div>
+
+  <div id="app">
+    <div class="login-tip">请先 <a href="login.html?back=redeem.html">登录</a> 后兑换卡密权益。</div>
+  </div>
+</div>
+
+<div id="footer"></div>
+
+<script src="assets/base.js"></script>
+<script>
+XJ.guardBanned();
+XJ.init({ active: 'redeem' });
+
+const ME0 = XJ.user();
+const app = document.getElementById('app');
+
+if (!ME0 || !ME0.uid) {
+  // 未登录：引导登录（guardBanned 对未登录用户无副作用）
+  app.innerHTML = '<div class="login-tip">请先 <a href="login.html?back=redeem.html">登录</a> 后兑换卡密权益。</div>';
+} else {
+  let ME = ME0;
+
+  function L() { return XJ.levelInfo(ME.level); }
+
+  function renderProfile() {
+    const lv = L();
+    app.innerHTML = `
+      <div class="card profile anim-up">
+        <div class="ava">🎁</div>
+        <div class="info">
+          <div class="nm">${ME.name}
+            <span class="lvchip" style="background:${lv.color}">${lv.name}${lv.zhe ? ' · ' + lv.zhe + '折' : ''}</span>
+          </div>
+          <div class="meta">
+            <span>积分 <b>${ME.point || 0}</b></span>
+            ${ME.vipExpireAt ? `<span>有效期至 <b>${ME.vipExpireAt}</b></span>` : ''}
+          </div>
+        </div>
+      </div>
+
+      <div class="card block anim-up d1">
+        <div class="section-title">输入卡密兑换权益</div>
+        <div class="redeem-row">
+          <input class="input" id="codeInput" placeholder="例如 XJ-89095606D7" autocomplete="off" />
+          <button class="btn btn-primary" id="redeemBtn" type="button">兑换</button>
+        </div>
+        <div class="redeem-msg" id="redeemMsg"></div>
+        <div class="hint">卡密兑换后将直接发放到当前账号（升级会员等级或增加积分）。每张卡密仅可使用一次，请确认输入无误。</div>
+      </div>
+
+      <div class="card block anim-up d2">
+        <div class="section-title">我的兑换记录</div>
+        <div class="hist" id="hist"></div>
+      </div>`;
+
+    renderHist();
+    document.getElementById('redeemBtn').addEventListener('click', doRedeem);
+    document.getElementById('codeInput').addEventListener('keydown', e => { if (e.key === 'Enter') doRedeem(); });
+  }
+
+  function renderHist() {
+    const el = document.getElementById('hist');
+    const list = (ME.redemptions || []);
+    if (!list.length) { el.innerHTML = '<div class="empty">暂无兑换记录</div>'; return; }
+    el.innerHTML = list.map(h => `
+      <div class="hist-item">
+        <span class="hi-code">${h.code}</span>
+        <span class="hi-desc">${h.desc}</span>
+        <span class="hi-time">${h.time || ''}</span>
+      </div>`).join('');
+  }
+
+  async function refreshMe() {
+    try {
+      const r = await fetch('/api/account/me?uid=' + encodeURIComponent(ME.uid) + '&token=' + encodeURIComponent(ME.token || ''));
+      const d = await r.json();
+      if (d && d.account) {
+        const a = d.account;
+        ME = Object.assign({}, ME, {
+          level: a.level, point: a.point, vipExpireAt: a.vipExpireAt,
+          redemptions: a.redemptions || [], name: a.name, banned: a.banned,
+        });
+        localStorage.setItem('xj_user', JSON.stringify(ME));
+      }
+    } catch (e) {}
+  }
+
+  async function doRedeem() {
+    const code = document.getElementById('codeInput').value.trim();
+    const msg = document.getElementById('redeemMsg');
+    const btn = document.getElementById('redeemBtn');
+    if (!code) { msg.textContent = '请输入卡密'; msg.className = 'redeem-msg err'; return; }
+    btn.disabled = true; btn.textContent = '兑换中…'; msg.textContent = ''; msg.className = 'redeem-msg';
+    try {
+      const r = await fetch('/api/card/redeem', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, uid: ME.uid, token: ME.token || '' }),
+      });
+      const d = await r.json();
+      if (!d || !d.ok) throw new Error((d && d.msg) || '兑换失败');
+      await refreshMe();
+      renderProfile();
+      msg.textContent = '兑换成功：' + d.desc + (d.expireAt ? '（有效期至 ' + d.expireAt + '）' : '');
+      msg.className = 'redeem-msg ok';
+      XJ.toast('兑换成功');
+    } catch (e) {
+      msg.textContent = e.message || '兑换失败';
+      msg.className = 'redeem-msg err';
+    } finally {
+      btn.disabled = false; btn.textContent = '兑换';
+    }
+  }
+
+  renderProfile();
+}
+</script>
+</body>
+</html>

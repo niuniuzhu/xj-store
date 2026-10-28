@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>XJ Store · 商店</title>
+<script src="assets/head.js"></script>
+<link rel="stylesheet" href="assets/base.css" />
+<style>
+  .layout {
+    display: grid; grid-template-columns: 232px minmax(0, 1fr); gap: 18px;
+    /* width:100% 必须有：body 是 flex 容器，auto 外边距会取消拉伸 */
+    width: 100%; max-width: min(var(--page-w), 100% - 32px); margin: 0 auto; padding: 22px 22px 60px;
+  }
+
+  /* 侧栏 */
+  .sidebar {
+    background: var(--surface); border-radius: var(--radius-lg);
+    padding: 16px 12px 14px; box-shadow: var(--shadow-card);
+    align-self: start; position: sticky; top: calc(var(--header-h) + 22px);
+  }
+  .sidebar-title {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 15px; font-weight: 700; padding: 2px 8px 14px;
+  }
+  .sidebar-title::before { content: ""; width: 3px; height: 15px; border-radius: 2px; background: var(--primary); }
+  .cat {
+    display: flex; align-items: center; gap: 10px; width: 100%;
+    padding: 10px 12px; border-radius: var(--radius);
+    color: var(--text-2); font-size: 14px; text-align: left;
+    transition: background .15s, color .15s, transform .15s;
+  }
+  .cat:hover { background: var(--surface-2); color: var(--text); transform: translateX(2px); }
+  .cat.active { background: var(--primary); color: #fff; font-weight: 600; box-shadow: 0 2px 8px rgba(43, 109, 246, .28); }
+  .cat-icon { width: 18px; height: 18px; display: grid; place-items: center; flex-shrink: 0; }
+  .cat-icon svg { width: 16px; height: 16px; }
+  .cat-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cat-arrow { width: 14px; height: 14px; opacity: .45; }
+  .cat.active .cat-arrow { opacity: .9; }
+  .cat .count { font-size: 12px; opacity: .6; }
+
+  /* 搜索 */
+  .search-box {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 0 14px; height: 44px;
+    box-shadow: var(--shadow-card); transition: border-color .15s, box-shadow .15s;
+  }
+  .search-box:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(43, 109, 246, .12); }
+  .search-box svg { width: 17px; height: 17px; color: var(--text-3); flex-shrink: 0; }
+  .search-box input { flex: 1; border: none; outline: none; background: none; font-size: 14px; color: var(--text); height: 100%; }
+  .search-box input::placeholder { color: var(--text-3); }
+  .search-clear {
+    width: 22px; height: 22px; border-radius: 50%; display: none; place-items: center;
+    background: var(--surface-2); color: var(--text-3);
+  }
+  .search-clear.show { display: grid; }
+  .search-clear svg { width: 12px; height: 12px; }
+  .search-clear:hover { background: var(--border); color: var(--text-2); }
+
+  /* 分组 */
+  .group { margin-top: 26px; }
+  .group-head { display: flex; align-items: center; gap: 9px; padding: 0 2px 12px; font-size: 15px; font-weight: 700; }
+  .group-head .gbar { width: 3px; height: 15px; border-radius: 2px; background: var(--primary); }
+  .group-head .gcount { color: var(--text-3); font-weight: 500; font-size: 13px; }
+  .product-list { display: flex; flex-direction: column; gap: 10px; }
+
+  /* 商品卡片 */
+  .product {
+    display: flex; align-items: center; gap: 14px;
+    background: var(--surface); border: 1px solid transparent;
+    border-radius: var(--radius-lg); padding: 14px 18px 14px 14px;
+    box-shadow: var(--shadow-card); cursor: pointer;
+    transition: transform .18s cubic-bezier(.22,.61,.36,1), box-shadow .18s, border-color .18s;
+  }
+  .product:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); border-color: var(--border-strong); }
+  .thumb {
+    width: 52px; height: 52px; border-radius: 12px; flex-shrink: 0;
+    display: grid; place-items: center; color: #fff; font-size: 22px;
+    position: relative; overflow: hidden; transition: transform .2s;
+  }
+  .thumb::after {
+    content: ""; position: absolute; inset: 0;
+    background: radial-gradient(circle at 30% 20%, rgba(255,255,255,.35), transparent 60%);
+  }
+  .product:hover .thumb { transform: scale(1.06) rotate(-3deg); }
+  .p-body { flex: 1; min-width: 0; }
+  .p-name { font-size: 15px; font-weight: 600; margin-bottom: 7px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .p-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .p-sub { color: var(--text-2); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 260px; }
+  .p-right { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+  .price { font-size: 15px; font-weight: 700; white-space: nowrap; }
+  .price .unit { font-size: 12px; font-weight: 600; color: var(--text-2); margin-left: 2px; }
+  .add-cart {
+    width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center;
+    background: var(--surface-2); color: var(--text-2);
+    transition: background .15s, color .15s, transform .12s;
+  }
+  .add-cart:hover { background: var(--primary-soft); color: var(--primary); }
+  .add-cart:active { transform: scale(.88); }
+  .add-cart svg { width: 17px; height: 17px; }
+  .chev { color: var(--text-3); opacity: .6; width: 16px; height: 16px; }
+
+  html.mobile-layout {
+    .layout { grid-template-columns: 1fr; padding: 16px 14px 50px; }
+    .sidebar { position: static; }
+    .p-sub { max-width: 130px; }
+  }
+
+  /* 版本更新弹窗样式已迁移至 base.css（全站通用） */
+</style>
+</head>
+<body>
+
+<div id="header"></div>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-title">分类</div>
+    <nav id="catList"></nav>
+  </aside>
+
+  <main class="main">
+    <div class="search-box">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>
+      <input id="searchInput" type="text" placeholder="搜索商品名称或关键词..." autocomplete="off" />
+      <button class="search-clear" id="searchClear" title="清空">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div id="content"></div>
+  </main>
+</div>
+
+<div id="footer"></div>
+<button class="to-top" id="toTop" title="回到顶部"></button>
+
+<script src="assets/base.js"></script>
+<script>
+/* =========================================================
+   数据区 —— 测试商品
+   ========================================================= */
+/* 分类默认内置兜底；启动后会被 /api/categories 的服务端分类覆盖 */
+let CATEGORIES = [
+  { id: 'all',      name: '全部商品',  icon: 'grid'  },
+  { id: 'bot',      name: '测试机器人', icon: 'bot'   },
+  { id: 'plugin',   name: '测试插件',  icon: 'plug'  },
+  { id: 'resource', name: '测试资源',  icon: 'book'  },
+  { id: 'service',  name: '商品服务',  icon: 'spark' },
+];
+
+let PRODUCTS = [];
+const FALLBACK_PRODUCTS = [
+  { id: 1,  cat: 'bot',      title: '测试机器人 · 入门版', sub: '测试机器人 UI...', tags: [['语音调用','orange'],['自由交付','blue']], price: 11.00,  emoji: '🤖', color: 'linear-gradient(135deg,#3b82f6,#60a5fa)' },
+  { id: 2,  cat: 'bot',      title: '测试机器人 · 标准版', sub: '测试机器人 UI...', tags: [['语音调用','orange'],['自由交付','blue']], price: 22.00,  emoji: '🤖', color: 'linear-gradient(135deg,#6366f1,#818cf8)' },
+  { id: 3,  cat: 'bot',      title: '测试机器人 · 进阶版', sub: '测试机器人 UI...', tags: [['语音调用','orange'],['自由交付','blue']], price: 33.00,  emoji: '🧭', color: 'linear-gradient(135deg,#0ea5e9,#38bdf8)' },
+  { id: 4,  cat: 'bot',      title: '测试机器人 · 旗舰版', sub: '测试机器人 UI...', tags: [['语音调用','orange'],['自由交付','blue']], price: 66.00,  emoji: '👑', color: 'linear-gradient(135deg,#8b5cf6,#a78bfa)' },
+  { id: 5,  cat: 'plugin',   title: '测试插件 · 自动发货', sub: '测试插件 A...',    tags: [['接口调用','orange'],['自由交付','blue']], price: 9.90,   emoji: '🔌', color: 'linear-gradient(135deg,#f59e0b,#fbbf24)' },
+  { id: 6,  cat: 'plugin',   title: '测试插件 · 数据同步', sub: '测试插件 B...',    tags: [['接口调用','orange'],['自由交付','blue']], price: 18.80,  emoji: '🔄', color: 'linear-gradient(135deg,#14b8a6,#2dd4bf)' },
+  { id: 7,  cat: 'resource', title: '测试资源 · 素材包',   sub: '测试资源 A...',    tags: [['网盘交付','blue']],                            price: 5.00,   emoji: '📦', color: 'linear-gradient(135deg,#ec4899,#f472b6)' },
+  { id: 8,  cat: 'resource', title: '测试资源 · 模板合集', sub: '测试资源 B...',    tags: [['网盘交付','blue']],                            price: 12.50,  emoji: '🎨', color: 'linear-gradient(135deg,#ef4444,#f87171)' },
+  { id: 9,  cat: 'service',  title: '测试服务 · 一对一部署', sub: '测试服务 A...',  tags: [['人工交付','orange'],['需预约','blue']],                            price: 99.00,  emoji: '🛠️', color: 'linear-gradient(135deg,#0f172a,#334155)' },
+  { id: 10, cat: 'service',  title: '测试服务 · 定制开发',   sub: '测试服务 B...',  tags: [['人工交付','orange'],['需预约','blue']],                            price: 199.00, emoji: '💎', color: 'linear-gradient(135deg,#059669,#34d399)' },
+];
+
+const ICONS = {
+  grid:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>',
+  bot:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="4" y="7" width="16" height="12" rx="4"/><path d="M12 3v4M9 13h.01M15 13h.01M9 17h6"/></svg>',
+  plug:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M9 3v6M15 3v6M6 9h12v3a6 6 0 0 1-12 0z"/><path d="M12 18v3"/></svg>',
+  book:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 5a2 2 0 0 1 2-2h12v18H6a2 2 0 0 1-2-2z"/><path d="M8 7h6"/></svg>',
+  spark: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"/></svg>',
+  cart:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2 3h3l2.4 12.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.6L21 7H6"/></svg>',
+  chev:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 5 7 7-7 7"/></svg>',
+  empty: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>',
+};
+
+let state = { cat: 'all', q: '' };
+
+/* 当前会员（仅用于展示会员价提示；实际折扣由服务端在下单时计算） */
+const ME = XJ.user();
+const ME_L = XJ.levelInfo((ME && ME.uid) ? (ME.level || '') : '');
+const ME_HAS_DISC = ME_L.rate < 1;
+
+const catListEl = document.getElementById('catList');
+const contentEl = document.getElementById('content');
+const searchInput = document.getElementById('searchInput');
+const searchClear = document.getElementById('searchClear');
+
+function renderSidebar() {
+  catListEl.innerHTML = CATEGORIES.map(c => {
+    const count = c.id === 'all' ? PRODUCTS.filter(p => p.status !== 'off').length : PRODUCTS.filter(p => p.cat === c.id && p.status !== 'off').length;
+    const arrow = c.id !== 'all' ? `<span class="cat-arrow">${ICONS.chev}</span>` : '';
+    return `<button class="cat ${state.cat === c.id ? 'active' : ''}" data-cat="${c.id}">
+        <span class="cat-icon">${ICONS[c.icon] || ICONS.grid}</span>
+        <span class="cat-label">${c.name}</span>
+        <span class="count">${count}</span>${arrow}
+      </button>`;
+  }).join('');
+}
+
+/* 规格价：规格自带 price 优先，否则回退商品统一价 */
+function specPriceOf(p, s) {
+  const base = Number(p.price) || 0;
+  if (!s || s.price === undefined || s.price === null || s.price === '') return base;
+  const v = Number(s.price);
+  return isNaN(v) ? base : v;
+}
+/* 列表展示：多规格不同价时展示最低价并标注「起」 */
+function priceRange(p) {
+  const list = (p.specs || []).map(s => specPriceOf(p, s));
+  if (!list.length) return { min: Number(p.price) || 0, multi: false };
+  return { min: Math.min(...list), multi: Math.max(...list) > Math.min(...list) };
+}
+function firstSpec(p) { return (p.specs && p.specs[0]) || null; }
+
+function renderContent() {
+  const q = state.q.trim().toLowerCase();
+  const visible = PRODUCTS.filter(p => {
+    const okCat = state.cat === 'all' || p.cat === state.cat;
+    const okQ = !q || (p.title + ' ' + p.sub + ' ' + p.tags.map(t => t[0]).join(' ')).toLowerCase().includes(q);
+    const onShelf = !p.status || p.status !== 'off';
+    return okCat && okQ && onShelf;
+  });
+
+  if (!visible.length) {
+    contentEl.innerHTML = `<div class="empty anim-in">${ICONS.empty}<div>没有找到相关商品，换个关键词试试</div></div>`;
+    return;
+  }
+
+  const groups = CATEGORIES.filter(c => c.id !== 'all')
+    .map(c => ({ cat: c, items: visible.filter(p => p.cat === c.id) }))
+    .filter(g => g.items.length);
+
+  contentEl.innerHTML = groups.map(g => `
+    <section class="group anim-up">
+      <div class="group-head"><span class="gbar"></span>${g.cat.name} <span class="gcount">(${g.items.length})</span></div>
+      <div class="product-list">
+        ${g.items.map((p, i) => {
+          const tagsArr = (p.tags || []).filter(([t]) => t !== '有库存' && t !== '缺货');
+          const tags = tagsArr.map(([t, c]) => `<span class="tag ${c}">${t}</span>`).join('');
+          const totalStock = (p.specs || []).reduce((a, s) => a + (Number(s.stock) || 0), 0);
+          const stockBadge = `<span class="stock-badge ${totalStock > 0 ? 'in' : 'out'}" data-stock-id="${p.id}">${totalStock > 0 ? '库存 ' + totalStock : '已售罄'}</span>`;
+          const pr = priceRange(p);
+          return `<article class="product anim-up d${Math.min(i + 1, 6)}" data-id="${p.id}">
+              <div class="thumb" style="background:${p.color}">${p.image ? `<img src="${p.image}" alt="" style="width:100%;height:100%;object-fit:cover" />` : p.emoji}</div>
+              <div class="p-body">
+                <div class="p-name">${XJ.loc(p, 'title')}</div>
+                <div class="p-meta"><span class="p-sub">${XJ.loc(p, 'sub')}</span>${tags}${stockBadge}</div>
+              </div>
+              <div class="p-right">
+                <div style="text-align:right">
+                  <div class="price">${pr.min.toFixed(2)}${pr.multi ? '<span class="unit">起</span>' : ''}<span class="unit">CNY</span></div>
+                  ${ME_HAS_DISC ? `<div style="font-size:11.5px;color:${ME_L.color};font-weight:700;margin-top:2px">${ME_L.name}${XJ.tr('价')} ¥${(pr.min * ME_L.rate).toFixed(2)}${pr.multi ? ' ' + XJ.tr('起') : ''}</div>` : ''}
+                </div>
+                <button class="add-cart" data-add="${p.id}" title="加入购物车">${ICONS.cart}</button>
+                <span class="chev">${ICONS.chev}</span>
+              </div>
+            </article>`;
+        }).join('')}
+      </div>
+    </section>`).join('');
+}
+
+catListEl.addEventListener('click', e => {
+  const btn = e.target.closest('.cat');
+  if (!btn) return;
+  state.cat = btn.dataset.cat;
+  renderSidebar();
+  renderContent();
+});
+
+searchInput.addEventListener('input', e => {
+  state.q = e.target.value;
+  searchClear.classList.toggle('show', !!state.q);
+  renderContent();
+});
+
+searchClear.addEventListener('click', () => {
+  state.q = ''; searchInput.value = '';
+  searchClear.classList.remove('show');
+  searchInput.focus();
+  renderContent();
+});
+
+contentEl.addEventListener('click', e => {
+  const addBtn = e.target.closest('[data-add]');
+  if (addBtn) {
+    e.stopPropagation();
+    const p = PRODUCTS.find(x => x.id === Number(addBtn.dataset.add));
+    const s0 = firstSpec(p);
+    XJ.cart.add({ id: p.id, title: XJ.loc(p, 'title'), price: specPriceOf(p, s0), emoji: p.emoji, color: p.color, spec: (s0 && s0.name) || XJ.tr('默认规格'), qty: 1 });
+    XJ.toast(XJ.tr('已加入购物车：') + XJ.loc(p, 'title'));
+    return;
+  }
+  const card = e.target.closest('.product');
+  if (card) location.href = 'commodity.html?id=' + card.dataset.id;
+});
+
+renderSidebar();
+renderContent();
+
+/* 语言切换时重渲（商品名/规格/标签随语言更新） */
+document.addEventListener('xj:langchange', () => { renderSidebar(); renderContent(); });
+
+/* 优先用服务端商品数据（管理后台可维护）；接口异常或离线双击打开时才回退内置数据 */
+(async function loadRemoteProducts() {
+  if (typeof fetch !== 'function') {
+    PRODUCTS = FALLBACK_PRODUCTS; renderSidebar(); renderContent(); return;
+  }
+  try {
+    const r = await fetch('/api/products');
+    if (!r.ok) throw new Error('bad status');
+    const j = await r.json();
+    // 服务端返回数组即以服务端为准（哪怕为空，后台删光时也要如实展示）
+    PRODUCTS = (j.ok && Array.isArray(j.list)) ? j.list : FALLBACK_PRODUCTS;
+  } catch (e) {
+    PRODUCTS = FALLBACK_PRODUCTS; // 取不到（如离线双击），回退到内置兜底
+  }
+  renderSidebar();
+  renderContent();
+})();
+
+/* 分类同样以后台维护的为准；取不到时保留内置兜底 */
+(async function loadRemoteCategories() {
+  if (typeof fetch !== 'function') return;
+  try {
+    const r = await fetch('/api/categories');
+    if (!r.ok) return;
+    const j = await r.json();
+    if (j.ok && Array.isArray(j.list) && j.list.length) {
+      CATEGORIES = [{ id: 'all', name: '全部商品', icon: 'grid' }].concat(j.list);
+      renderSidebar();
+      renderContent();
+    }
+  } catch (e) { /* 保留内置分类 */ }
+})();
+
+/* 版本更新弹窗逻辑已迁移至 base.js（全站通用），此处不再重复 */
+
+/* 实时库存：每 15 秒拉取最新商品库存并更新卡片徽标，避免他人下单后本地显示过期 */
+(async function liveStock() {
+  if (typeof fetch !== 'function') return;
+  const tick = async () => {
+    try {
+      const r = await fetch('/api/products');
+      if (!r.ok) return;
+      const j = await r.json();
+      if (!(j.ok && Array.isArray(j.list))) return;
+      const map = {};
+      j.list.forEach(p => { map[p.id] = (p.specs || []).reduce((a, s) => a + (Number(s.stock) || 0), 0); });
+      document.querySelectorAll('[data-stock-id]').forEach(el => {
+        const st = map[el.getAttribute('data-stock-id')];
+        if (st === undefined) return;
+        if (st > 0) { el.textContent = '库存 ' + st; el.className = 'stock-badge in'; }
+        else { el.textContent = '已售罄'; el.className = 'stock-badge out'; }
+      });
+    } catch (e) { /* 网络波动忽略，下次轮询再试 */ }
+  };
+  setInterval(tick, 15000);
+})();
+
+XJ.guardBanned();
+XJ.init({ active: 'home' });
+</script>
+</body>
+</html>

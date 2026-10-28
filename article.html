@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>文章详情 · XJ Store</title>
+<script src="assets/head.js"></script>
+<link rel="stylesheet" href="assets/base.css" />
+<style>
+  /* 阅读进度条 */
+  .progress {
+    position: fixed; top: 0; left: 0; height: 3px; z-index: 80;
+    background: linear-gradient(90deg, var(--primary), #7ab0ff); width: 0;
+    transition: width .1s linear;
+  }
+
+  .wrap { width: 100%; max-width: min(var(--page-w), 100% - 32px); margin: 0 auto; padding: 22px 22px 0; }
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 22px; align-items: start; }
+
+  .article { padding: 34px 40px 40px; }
+  .a-tag { margin-bottom: 14px; }
+  .a-title { font-size: 30px; font-weight: 800; line-height: 1.35; margin: 0 0 16px; letter-spacing: -.4px; }
+  .a-meta { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; font-size: 13px; color: var(--text-3); padding-bottom: 22px; border-bottom: 1px solid var(--border); }
+  .a-meta .author { display: flex; align-items: center; gap: 8px; color: var(--text-2); font-weight: 600; }
+  .author-avatar {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), #7ab0ff);
+    display: grid; place-items: center; color: #fff; font-size: 12px; font-weight: 700;
+  }
+  .a-cover {
+    height: 240px; border-radius: 12px; margin: 26px 0 30px;
+    display: grid; place-items: center; font-size: 84px; position: relative; overflow: hidden;
+  }
+  .a-cover::after {
+    content: ""; position: absolute; inset: 0;
+    background: radial-gradient(circle at 28% 20%, rgba(255,255,255,.34), transparent 62%);
+  }
+
+  .prose { font-size: 15px; line-height: 1.95; color: var(--text); }
+  .prose p { margin: 0 0 18px; }
+  .prose h2 {
+    font-size: 20px; font-weight: 700; margin: 34px 0 14px;
+    padding-left: 12px; border-left: 3px solid var(--primary); scroll-margin-top: 80px;
+  }
+  .prose h3 { font-size: 16.5px; font-weight: 700; margin: 26px 0 10px; }
+  .prose ul { margin: 0 0 18px; padding-left: 22px; }
+  .prose li { margin-bottom: 8px; }
+  .prose blockquote {
+    margin: 0 0 18px; padding: 14px 18px; border-left: 3px solid var(--primary);
+    background: var(--surface-2); border-radius: 0 8px 8px 0; color: var(--text-2);
+  }
+  .prose code {
+    background: var(--surface-2); padding: 2px 6px; border-radius: 5px;
+    font-family: ui-monospace, Consolas, monospace; font-size: 13.5px; color: var(--primary);
+  }
+  .prose pre {
+    background: #1f2329; color: #e6e8eb; padding: 16px 18px; border-radius: 10px;
+    overflow-x: auto; margin: 0 0 20px; font-size: 13px; line-height: 1.7;
+  }
+  .prose pre code { background: none; color: inherit; padding: 0; }
+  .prose img { max-width: 100%; border-radius: 10px; }
+
+  .a-actions { display: flex; align-items: center; gap: 10px; margin-top: 34px; padding-top: 24px; border-top: 1px solid var(--border); }
+
+  /* 目录 */
+  .toc { position: sticky; top: calc(var(--header-h) + 22px); padding: 20px 18px; }
+  .toc-title { font-size: 14px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .toc-title::before { content: ""; width: 3px; height: 14px; border-radius: 2px; background: var(--primary); }
+  .toc a {
+    display: block; padding: 7px 10px; border-radius: 8px; font-size: 13px;
+    color: var(--text-2); border-left: 2px solid transparent; transition: all .15s;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .toc a:hover { background: var(--surface-2); color: var(--text); }
+  .toc a.active { color: var(--primary); background: var(--primary-soft); border-left-color: var(--primary); font-weight: 600; }
+  .toc .rel { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--border); }
+  .toc .rel a { white-space: normal; line-height: 1.5; }
+
+  .back-link { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 34px 0 10px; color: var(--text-2); font-size: 14px; }
+  .back-link:hover { color: var(--primary); }
+  .back-link svg { width: 16px; height: 16px; }
+
+  html.mobile-layout {
+    .layout { grid-template-columns: 1fr; }
+    .toc { display: none; }
+    .article { padding: 24px 20px 30px; }
+    .a-title { font-size: 23px; }
+    .wrap { padding: 16px 14px 0; }
+  }
+</style>
+</head>
+<body>
+
+<div id="header"></div>
+<div class="progress" id="progress"></div>
+
+<div class="wrap">
+  <div id="app">
+    <div class="layout">
+      <div class="card article" id="article"></div>
+      <aside class="card toc" id="toc"></aside>
+    </div>
+  </div>
+  <a class="back-link" href="blog.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m15 5-7 7 7 7"/></svg>
+    返回博客列表
+  </a>
+</div>
+
+<div id="footer"></div>
+<button class="to-top" id="toTop" title="回到顶部"></button>
+
+<script src="assets/base.js"></script>
+<script>
+const POSTS = {
+  10: { tag: '公告', title: 'XJ Store v4.5.1 版本更新公告', date: '2026-10-27', read: 3, views: 0, emoji: '🤖',
+       color: 'linear-gradient(135deg,#2b6df6,#35c6f4)',
+       body: `<p>v4.5.1 是一次聚焦「XJ AI 体验」的小版本更新。我们把重点放在让 AI 助手更实用、更顺手：现在它不但能聊天，还能看懂你发来的图片与文档，并在交互细节上做了不少打磨。</p>
+<h2 id="s1">XJ AI 图片与文档识别</h2>
+<p>聊天输入框左侧新增「上传」按钮，可以直接把<strong>图片</strong>（png / jpg / webp / gif，单张 ≤6MB）或<strong>文本类文档</strong>（txt / md / json / csv / 代码文件等，单份 ≤1MB）发给 XJ AI。</p>
+<ul>
+<li>图片会以原图形式传给模型做视觉理解，例如识别截图内容、描述画面、提取图中的文字</li>
+<li>文档会被读成文本并随对话一起发送，适合让 AI 帮你改代码、总结报告、翻译文件</li>
+<li>选中的附件会在发送框下方以缩略图 / 文件名卡片预览，可逐个移除；会话历史里也会保留图片与文档标记</li>
+</ul>
+<blockquote>提示：图片仅在当前会话可见，刷新后不会随对话记录一起留存，这是为了不把大体积数据写进浏览器本地存储。</blockquote>
+<h2 id="s2">对话重试更顺手</h2>
+<p>当某次回答<strong>出错</strong>或<strong>中断</strong>时，消息下方会直接出现「重试」按钮，点一下即可从对应的提问重新生成，无需手动复制粘贴；最后一条正常回答也保留「重新生成」入口。</p>
+<ul>
+<li>重试会自动带上原始的文字、图片与文档，上下文不丢</li>
+<li>正在生成时按钮变为「停止」，可随时中断长回答</li>
+</ul>
+<h2 id="s3">按钮动效</h2>
+<p>AI 页面的一众按钮都加上了细腻的微动效：发送按钮悬浮轻微上浮、图标斜向滑动；新建对话按钮悬浮有一道流光扫过；左上角的 AI 球体轻轻浮动；图标按钮与建议气泡点击 / 悬浮都有回弹反馈。所有动效都遵循 <code>prefers-reduced-motion</code>，对晕动敏感的用户会自动关闭。</p>
+<h2 id="s4">手机端切换按钮</h2>
+<p>对话页右上角新增「手机端」按钮，一键把界面切换成手机窄屏排版，方便在桌面端预览移动端效果；顶栏原本的手机按钮依然可用，两端状态实时同步。</p>
+<h2 id="s5">顶栏品牌焕新</h2>
+<p>顶栏左上角的站点标识做了重新设计：渐变方块 logo 与 XJ AI 的紫蓝青配色体系保持一致，圆角与高光更精致，品牌名加粗，整体观感更统一、更现代。</p>
+<h2 id="s6">小结</h2>
+<p>v4.5.1 让你与 XJ AI 的协作从「纯文字」升级到「图文混聊」，并让每一次点击都更跟手。欢迎在顶栏点开 XJ AI 试用新能力，遇到问题随时通过页面底部联系方式反馈。再次感谢你的支持！</p>` },
+
+  9: { tag: '公告', title: 'XJ Store v4.0.0 版本更新公告', date: '2026-10-22', read: 8, views: 0, emoji: '🎉',
+       color: 'linear-gradient(135deg,#8b5cf6,#ec4899)',
+       body: `<p>v4.0.0 是 XJ Store 一次里程碑式的大版本更新。本次更新围绕「全球化体验」「视觉质感」「交互细节」与「账号体系」四条主线全面升级，让商店在外观、易用性与多端协同上都有质的飞跃。感谢一路相伴的每一位用户与开发者。</p>
+<h2 id="s1">全新四语言支持</h2>
+<p>商店现已支持四种界面语言：<strong>中文</strong>、<strong>English</strong>、<strong>日本語</strong> 与 <strong>繁體中文</strong>。只需点击顶栏的语言按钮，整站文案（导航、按钮、提示、公告、商品与分类名称）即可实时切换，无需刷新。</p>
+<ul>
+<li>简体 / 繁体采用字符映射兜底，未逐条翻译的界面文本也会自动转换，覆盖更完整</li>
+<li>商品与分类名支持多语言数据层，后台可分别填写各语言版本</li>
+<li>语言选择写入本地存储，跨页面保持一致；切换语言时滑动态、弹窗等动态元素同步翻译</li>
+</ul>
+<h2 id="s2">液态玻璃质感</h2>
+<p>新增「质感」开关，可在<strong>普通</strong>与<strong>玻璃</strong>两种观感之间自由切换，且与浅色 / 深色主题完全独立。开启玻璃质感后，所有卡片与面板呈现半透明毛玻璃效果，并保留背景图片的可见度。</p>
+<ul>
+<li>玻璃模式采用更通透的半透明面材与 <code>backdrop-filter</code> 模糊高光，质感细腻</li>
+<li>切换在顶栏一键完成，状态持久化保存，刷新后依旧有效</li>
+<li>普通模式回归清爽实体卡片，满足不同偏好与设备性能</li>
+</ul>
+<h2 id="s3">全局弹窗公告</h2>
+<p>站点公告升级为<strong>居中弹窗</strong>形式：进入页面自动淡入弹出，关闭后右下角保留一个铃铛按钮可随时再看；同一内容关闭后按内容记忆，后台修改公告会重新弹出。原版本更新弹窗也一并<strong>全站化</strong>，从仅 store 页扩展到所有前台页面，按当天与版本号去重。</p>
+<ul>
+<li>弹窗打开时锁定背景滚动，关闭更顺手</li>
+<li>公告与版本更新两套弹窗并存但互不冲突，按各自规则展示</li>
+<li>弹窗文案随语言切换自动翻译</li>
+</ul>
+<h2 id="s4">滑动交互动画</h2>
+<p>多处按钮与切换加入平滑滑动效果，操作更有节奏感。登录页的「登录 / 注册 / 游客」三个标签现已支持<strong>滑动高亮指示条</strong>，点击时高亮条会平滑滑动到当前标签；结算页的默认联系方式（QQ / 微信 / 邮箱 / 手机号）与后台侧边栏标签同样采用滑动分段控件。</p>
+<blockquote>提示：滑动条会在窗口缩放与语言切换后自动重新定位，避免错位。</blockquote>
+<h2 id="s5">星际账号体系</h2>
+<p>全新推出「星际账号管理中心」：用户可自行创建星际账号、登录并管理个人资料（用户名、邮箱、手机号、QQ、微信、默认联系方式、登录密码）。更重要的是，星际账号现已<strong>接入商店登录系统</strong>——在商店登录页点击「使用星际账户登录」，跳转至星际账号中心确认授权后，签发票据自动回跳商店完成登录。</p>
+<ul>
+<li>授权采用服务端共享密钥 + HMAC-SHA256 签名票据，5 分钟有效期，会话失效即作废，安全可靠</li><li>账号中心与商店登录态打通，一次授权、跨页可用</li>
+<li>星际账号中心作为独立页面，专注账号管理与授权确认</li>
+</ul>
+<h2 id="s6">独立账号管理中心</h2>
+<p>新增「账号中心」导航入口与独立管理页，登录后即可集中管理自己的名字、邮箱、联系方式与密码，并查看会员等级、积分与专属折扣。资料保存实时同步至服务端，操作简单直观。</p>
+<ul>
+<li>顶栏新增「账号中心」入口，随页面自动高亮</li><li>默认联系方式采用滑动分段控件，选择更顺手</li>
+<li>会员等级与折扣一览，下单前即可预估优惠</li>
+</ul>
+<h2 id="s7">其它优化与修复</h2>
+<ul>
+<li>静态资源统一添加 <code>no-cache</code> 响应头，更新前端后普通刷新即可生效，避免旧缓存</li>
+<li>背景图片加载增加缓存、重试与降级兜底，玻璃模式下依旧清晰可见</li>
+<li>若干移动端与多语言下的排版与文案细节优化</li>
+</ul>
+<p>v4.0.0 是我们向着「更国际、更精致、更顺手」迈出的一大步。如遇任何使用问题，欢迎通过页面底部联系方式反馈。再次感谢你的支持！</p>` },
+
+  8: { tag: '公告', title: 'XJ Store v3.8.0 版本更新公告', date: '2026-10-14', read: 5, views: 0, emoji: '📢',
+       color: 'linear-gradient(135deg,#ef4444,#f87171)',
+       body: `<p>v3.8.0 是 XJ Store 面向「商品展示与运营配置」的一次更新。本次更新让商品可以上传真实图片、按规格分别定价、由后台自由维护分类，并新增商品下架与站点维护模式，商店运营更加灵活可控。感谢大家一直以来的支持与反馈。</p>
+<h2 id="s1">商品图片上传</h2>
+<p>商品不再只能用图标展示。管理后台的商品编辑中新增「商品图片」上传，支持 png / jpg / webp / gif 格式，单张不超过 5MB。</p>
+<ul><li>上传后商品列表、详情页主图都会显示真实图片</li><li>尚未上传图片的商品仍自动回退显示原有图标，不会留白</li><li>可随时「清除」图片，恢复图标展示</li></ul>
+<h2 id="s2">商品名全面中文化</h2>
+<p>商店内商品名称统一调整为<strong>中文</strong>，英文代号不再作为商品标题展示，而是保留在副标题中，方便识别与搜索。</p>
+<ul><li>例如「XUANCHUAN 服务器宣传」调整为「服务器宣传」，副标题保留「代号 XUANCHUAN」</li><li>既满足全中文浏览体验，又不丢失原有代号信息</li></ul>
+<h2 id="s3">不同规格不同价格</h2>
+<p>商品规格正式支持<strong>独立定价</strong>：同一商品的不同规格可以有不同的价格与库存。</p>
+<ul><li>切换规格时，详情页的价格与会员价实时联动</li><li>规格未单独设置价格时，自动沿用商品统一价，原有商品无需修改</li><li>列表页在多规格不同价时展示最低价并标注「起」</li><li>下单金额由服务端按规格权威重算，前端无法篡改</li></ul>
+<blockquote>提示：服务端会以规格价重新计算订单金额，即使请求被篡改，也按后台配置的价格结算。</blockquote>
+<h2 id="s4">分类管理</h2>
+<p>商品分类不再写死在页面里，改由管理后台维护，并新增「分类管理」页面。</p>
+<ul><li>支持新增分类、修改名称与图标、删除分类</li><li>分类下仍有商品时禁止删除，避免出现无分类的孤儿商品</li><li>商店侧栏、商品分组与详情页分类名全部实时同步</li></ul>
+<h2 id="s5">商品下架与站点维护</h2>
+<p>新增两种「暂停售卖」能力，方便运营调整与发版维护时控场。</p>
+<ul><li>商品下架：单个商品标记为下架后不再出现在商品列表，详情页会提示已下架并禁止加购，下单接口同步拦截</li><li>站点维护：后台一键开启维护模式，访客将看到维护页且无法下单，管理员仍可正常登录操作</li></ul>
+<h2 id="s6">其它优化与修复</h2>
+<ul><li>修复商品详情页未显示已上传图片的问题</li><li>管理后台商品编辑新增图片、规格价格等配置项，字段提示更加清晰</li><li>若干商品展示与移动端体验细节优化</li></ul>
+<p>如遇任何使用问题，欢迎通过页面底部联系方式反馈。再次感谢你的支持！</p>` },
+
+  7: { tag: '公告', title: 'XJ Store v3.7.2 版本更新公告', date: '2026-10-12', read: 6, views: 0, emoji: '📢',
+       color: 'linear-gradient(135deg,#ef4444,#f87171)',
+       body: `<p>v3.7.2 是 XJ Store 一次较大的功能与安全综合更新。本次更新聚焦「会员权益」「交易灵活性」与「账户安全」三条主线，感谢大家一直以来的支持与反馈。</p>
+<h2 id="s1">会员体系与会员折扣</h2>
+<p>正式上线四档会员体系：超级会员(SVIP)、高级会员(LVIP)、普通会员与未设置等级。不同等级在下单时自动享受对应折扣，折扣由服务端权威计算，前端仅作展示提示。</p>
+<ul><li>超级会员(SVIP)：至尊折扣，数字商品专享低价</li><li>高级会员(LVIP)：进阶折扣，适合高频采购</li><li>会员价会在商品列表与结算页实时展示，先登录再下单更划算</li></ul>
+<h2 id="s2">账户封禁系统</h2>
+<p>新增账户封禁能力。被封禁的账户将<strong>无法浏览商店</strong>，只能切换其他账户登录，从入口上阻断违规账户。</p>
+<ul><li>封禁状态由前后端双重校验，无法绕过</li><li>管理后台新增独立的「账户管理」页面，支持批量查看与封禁/解封操作</li></ul>
+<h2 id="s3">优惠券下单抵扣</h2>
+<p>结算页正式支持优惠券。优惠券分为「立减券」与「折扣券」两类，下单时<strong>自动叠加在会员折扣之后</strong>，先打折再减券，让用户可以享受双重优惠。</p>
+<blockquote>提示：满减类优惠券的门槛按商品<strong>原价</strong>计算，即使是高折扣会员也能正常使用满减券。</blockquote>
+<ul><li>立减券：满足门槛后直接减去固定金额</li><li>折扣券：满足门槛后按系数打折</li><li>券无效或不符合等级时自动跳过，不会阻断下单</li></ul>
+<h2 id="s4">卡密自助兑换</h2>
+<p>新增「兑换」页面。登录后输入卡密即可<strong>自助兑换</strong>会员时长或积分，结果即时生效，无需等待人工。</p>
+<ul><li>支持兑换会员时长（如 SVIP 30 天）与积分两种奖励</li><li>「我的」页面新增兑换记录，随时查看历史</li><li>卡密一次性使用，重复兑换会被拒绝</li></ul>
+<h2 id="s5">安全加固</h2>
+<p>本版本重点提升了账户与交易安全：</p>
+<ul><li>支付密钥迁移至环境变量(<code>.env</code>)，不再以明文写入配置文件，避免通过浏览器查看源码泄露</li><li>静态资源改为白名单机制，<code>server/</code>、<code>data/</code> 等敏感目录一律不可访问</li><li>订单与登录接口增加封禁校验，封禁账户无法下单或登录</li></ul>
+<h2 id="s6">其它优化</h2>
+<ul><li>管理后台增加「账户管理」页面的清晰入口（顶栏、模块主按钮、表格行按钮）</li><li>若干结算与移动端的体验问题修复</li></ul>
+<p>如遇任何使用问题，欢迎通过页面底部联系方式反馈。再次感谢你的支持！</p>` },
+
+  1: { tag: '产品更新', title: 'XJ Store v1.2 更新：支持规格与限购', date: '2026-10-08', read: 6, views: 1284, emoji: '🚀',
+       color: 'linear-gradient(135deg,#3b82f6,#60a5fa)',
+       body: `<p>本次更新围绕「商品可配置性」做了重点投入，主要变化集中在商品规格、限购规则以及视觉主题三个方面。</p>
+<h2 id="s1">多规格商品</h2>
+<p>现在一个商品可以配置多个规格，每个规格独立维护库存与价格。用户在详情页切换规格时，库存提示、可购数量与按钮状态都会实时重算。</p>
+<ul><li>规格支持自定义名称，例如「含源码」「含运维 1 个月」</li><li>单规格库存为 0 时自动标记为已售罄且不可选中</li><li>购物车按「商品 + 规格」维度合并，避免重复条目</li></ul>
+<h2 id="s2">限购规则</h2>
+<p>针对高价值或稀缺商品，可以开启限购。限购同时支持「单次购买数量上限」与「累计购买数量上限」两种模式。</p>
+<blockquote>提示：限购开启后，商品卡片会展示「限购」标记，详情页也会同步提示剩余可购数量。</blockquote>
+<h2 id="s3">深色主题</h2>
+<p>整套界面改由 CSS 变量驱动，新增 <code>data-theme="dark"</code> 后即可完成全站换肤，无需改动任何组件代码。</p>
+<pre><code>html[data-theme="dark"] {
+  --bg: #17181c;
+  --surface: #232428;
+  --text: #e6e8eb;
+}</code></pre>
+<p>主题选择会写入 localStorage，跨页面保持一致，并在页面渲染前应用，避免刷新时出现白屏闪烁。</p>
+<h2 id="s4">其它优化</h2>
+<ul><li>移动端商品列表改为单列，标签自动换行</li><li>新增骨架屏，列表切换时过渡更自然</li><li>修复窄屏下顶栏购物车按钮被挤压的问题</li></ul>` },
+
+  2: { tag: '技术实践', title: '用 CSS 变量做一套可维护的主题系统', date: '2026-10-05', read: 9, views: 2361, emoji: '🎨',
+       color: 'linear-gradient(135deg,#8b5cf6,#a78bfa)',
+       body: `<p>给已有站点加深色模式，最痛苦的不是写两套配色，而是改完之后发现到处都是硬编码颜色。本文记录我们是如何用一套变量把这件事收敛掉的。</p>
+<h2 id="s1">先把颜色收拢成语义变量</h2>
+<p>不要在组件里写 <code>#fff</code> 或 <code>#333</code>，而是统一使用语义变量：<code>--surface</code> 表示卡片背景，<code>--text-2</code> 表示次级文字。这样换肤时只需要替换变量值。</p>
+<h2 id="s2">用一个属性驱动切换</h2>
+<p>我们选择把主题挂在根节点上，而不是给每个容器加类名：</p>
+<pre><code>&lt;html data-theme="dark"&gt;
+  ...
+&lt;/html&gt;</code></pre>
+<p>深色样式全部收敛到 <code>html[data-theme="dark"]</code> 这一条规则里，新增页面无需关心。</p>
+<h2 id="s3">解决刷新白屏</h2>
+<p>主题存在 localStorage，但如果在 body 加载后才应用，用户会看到一帧浅色。解决办法是在 <code>&lt;head&gt;</code> 里放一段同步脚本，在首帧渲染前把属性打上。</p>
+<h2 id="s4">过渡不要常开</h2>
+<p>如果给 body 常驻 transition，首次加载会看到颜色渐变，观感很差。我们的做法是切换瞬间临时加一个 class，几百毫秒后再移除。</p>
+<blockquote>另外记得尊重 <code>prefers-reduced-motion</code>，对晕动敏感的用户关闭动画。</blockquote>` },
+
+  3: { tag: '运营笔记', title: '数字商品的交付方式怎么选', date: '2026-09-28', read: 7, views: 1503, emoji: '📦',
+       color: 'linear-gradient(135deg,#f59e0b,#fbbf24)',
+       body: `<p>卖数字商品，交付方式直接决定了售后成本。选错了，客服会被淹没在「我怎么还没收到」的工单里。</p>
+<h2 id="s1">自动发货</h2>
+<p>付款成功后系统自动发放卡密，用户无需等待。适合标准化、库存充足的虚拟物品。</p>
+<ul><li>优点：零人工、即时到账、体验最好</li><li>缺点：库存管理要求高，一旦超卖很难补救</li></ul>
+<h2 id="s2">网盘交付</h2>
+<p>付款后展示网盘链接与提取码。适合大体积素材、模板包等。</p>
+<ul><li>优点：不受库存限制，成本极低</li><li>缺点：链接可能失效，需要预留补发通道</li></ul>
+<h2 id="s3">人工交付</h2>
+<p>由运营人员确认后手动交付。适合定制服务、高单价商品。</p>
+<blockquote>建议：人工交付一定要在商品页显著标注预期时长，并在下单后给出进度入口，否则用户会焦虑。</blockquote>
+<h2 id="s4">怎么组合</h2>
+<p>实践中我们按单价分档：50 元以下一律自动发货，50 到 300 元用网盘或半自动，300 元以上走人工确认。这个分界让售后工单量下降了约六成。</p>` },
+
+  4: { tag: '技术实践', title: '前端骨架屏的三种实现方式', date: '2026-09-20', read: 5, views: 982, emoji: '⚡',
+       color: 'linear-gradient(135deg,#14b8a6,#2dd4bf)',
+       body: `<p>骨架屏不是万能药。用错了场景，它会让页面看起来更慢。</p>
+<h2 id="s1">纯 CSS 渐变</h2>
+<p>用 <code>linear-gradient</code> 配合 <code>background-position</code> 动画做扫光效果，零依赖、性能最好，适合列表与卡片。</p>
+<h2 id="s2">伪元素遮罩</h2>
+<p>在真实内容上盖一层骨架，数据到位后移除。适合布局稳定的详情页。</p>
+<h2 id="s3">真实数据占位</h2>
+<p>用上一页的缓存数据或空数据渲染真实结构，只是把文本换成占位块。布局最接近最终效果，代价是代码侵入。</p>
+<h2 id="s4">别做的事</h2>
+<ul><li>不要给极快的接口加骨架屏，闪烁反而更难受</li><li>不要让骨架屏的布局和真实内容差太多，会造成跳动</li><li>记得给动画加 <code>prefers-reduced-motion</code> 保护</li></ul>` },
+
+  5: { tag: '公告', title: '关于支付渠道维护的通知', date: '2026-09-15', read: 3, views: 3120, emoji: '📢',
+       color: 'linear-gradient(135deg,#ef4444,#f87171)',
+       body: `<p>因支付服务商例行维护，部分支付方式将出现短暂不可用，请提前安排下单时间。</p>
+<h2 id="s1">维护时间</h2>
+<p>2026 年 10 月 12 日 02:00 至 04:00（UTC+8），预计持续两小时。</p>
+<h2 id="s2">影响范围</h2>
+<ul><li>微信支付：预计全程不可用</li><li>支付宝：可能出现支付结果延迟返回</li><li>已下单未支付的订单：可在维护结束后继续完成支付</li></ul>
+<h2 id="s3">如果支付卡住了</h2>
+<p>若付款后订单长时间停留在待支付状态，请勿重复下单。可以先到订单查询页确认状态，或联系客服处理。</p>
+<blockquote>维护期间产生的任何异常订单，我们会在恢复后 24 小时内全额退回。</blockquote>` },
+
+  6: { tag: '产品更新', title: '订单查询支持邮箱批量检索', date: '2026-09-08', read: 4, views: 764, emoji: '🔍',
+       color: 'linear-gradient(135deg,#059669,#34d399)',
+       body: `<p>以前查订单必须记住订单号，很多人下单完就把邮件删了。现在用邮箱就能查到名下全部订单。</p>
+<h2 id="s1">怎么用</h2>
+<p>进入订单查询页，输入下单时填写的邮箱，即可列出该邮箱关联的所有订单及交付内容。</p>
+<h2 id="s2">能看到什么</h2>
+<ul><li>订单号、下单时间、支付状态</li><li>购买的商品与规格、数量</li><li>自动发货类商品的卡密内容</li></ul>
+<h2 id="s3">隐私说明</h2>
+<p>为避免订单被他人随意查看，查询结果仅展示脱敏后的部分信息，完整内容需要配合订单号使用。</p>` },
+};
+
+const id = Number(new URLSearchParams(location.search).get('id')) || 1;
+const post = POSTS[id] || POSTS[1];
+document.title = post.title + ' · XJ Store';
+
+const articleEl = document.getElementById('article');
+const tocEl = document.getElementById('toc');
+
+articleEl.className = 'card article anim-up';
+articleEl.innerHTML = `
+  <div class="breadcrumb">
+    <a href="store.html">首页</a><span class="sep">/</span>
+    <a href="blog.html">博客</a><span class="sep">/</span>
+    <span class="cur">${post.tag}</span>
+  </div>
+  <span class="tag blue a-tag">${post.tag}</span>
+  <h1 class="a-title">${post.title}</h1>
+  <div class="a-meta">
+    <span class="author"><span class="author-avatar">X</span>XJ Store</span>
+    <span>${post.date}</span>
+    <span>${post.read} 分钟阅读</span>
+    <span>${post.views.toLocaleString()} 次浏览</span>
+  </div>
+  <div class="a-cover" style="background:${post.color}">${post.emoji}</div>
+  <div class="prose">${post.body}</div>
+  <div class="a-actions">
+    <button class="btn btn-ghost btn-sm" id="likeBtn">👍 有帮助</button>
+    <button class="btn btn-outline btn-sm" id="copyBtn">复制链接</button>
+  </div>`;
+
+/* 目录 */
+const headings = [...articleEl.querySelectorAll('.prose h2')];
+const related = Object.entries(POSTS).filter(([k]) => Number(k) !== id).slice(0, 4);
+tocEl.innerHTML = `
+  <div class="toc-title">目录</div>
+  ${headings.map(h => `<a href="#${h.id}">${h.textContent}</a>`).join('')}
+  <div class="toc rel">
+    <div class="toc-title">相关阅读</div>
+    ${related.map(([k, p]) => `<a href="article.html?id=${k}">${p.title}</a>`).join('')}
+  </div>`;
+
+/* 滚动高亮 + 阅读进度 */
+const links = [...tocEl.querySelectorAll('a[href^="#"]')];
+const bar = document.getElementById('progress');
+window.addEventListener('scroll', () => {
+  const h = document.documentElement;
+  const pct = h.scrollTop / (h.scrollHeight - h.clientHeight) * 100;
+  bar.style.width = (isNaN(pct) ? 0 : pct) + '%';
+
+  let cur = null;
+  headings.forEach(h => { if (h.getBoundingClientRect().top < 120) cur = h.id; });
+  links.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + cur));
+}, { passive: true });
+
+document.getElementById('likeBtn').addEventListener('click', () => XJ.toast('感谢反馈！'));
+document.getElementById('copyBtn').addEventListener('click', () => {
+  navigator.clipboard?.writeText(location.href);
+  XJ.toast('链接已复制');
+});
+
+XJ.init({ active: 'blog' });
+</script>
+</body>
+</html>

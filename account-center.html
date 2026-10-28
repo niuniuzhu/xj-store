@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>账号中心 · XJ Store</title>
+<script src="assets/head.js"></script>
+<link rel="stylesheet" href="assets/base.css" />
+<style>
+  .wrap { width: 100%; max-width: min(var(--page-w), 100% - 32px); margin: 0 auto; padding: 22px 22px 0; }
+  .layout { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 18px; align-items: start; }
+
+  /* ============ 登录 / 注册 门禁 ============ */
+  .gate { min-height: calc(100vh - var(--header-h)); display: grid; place-items: center; padding: 40px 20px; }
+  .gate-inner { width: 100%; max-width: 420px; text-align: center; }
+  .gate-brand { margin-bottom: 22px; }
+  .gate-logo {
+    width: 60px; height: 60px; margin: 0 auto 14px; border-radius: 18px;
+    background: linear-gradient(135deg, var(--primary), #7ab0ff); display: grid; place-items: center;
+    font-size: 28px; color: #fff; box-shadow: 0 12px 32px rgba(43, 109, 246, .45);
+  }
+  .gate-brand h1 { font-size: 23px; font-weight: 800; margin: 0 0 8px; }
+  .gate-brand p { font-size: 13.5px; color: var(--text-3); margin: 0; }
+  .gate-card { padding: 26px 26px 24px; text-align: left; }
+  .gate-err { color: var(--red); font-size: 13px; margin-top: 12px; display: none; }
+  .gate-err.show { display: block; }
+
+  .tabs { position: relative; display: flex; gap: 4px; background: var(--surface-2); padding: 4px; border-radius: 999px; margin-bottom: 22px; }
+  .tabs button {
+    position: relative; z-index: 2; flex: 1; height: 38px; border-radius: 999px; font-size: 14px;
+    color: var(--text-2); background: transparent; border: none; cursor: pointer; transition: color .22s;
+  }
+  .tabs button.active { color: var(--primary); font-weight: 600; }
+  .tabs .tab-indicator {
+    position: absolute; z-index: 1; top: 4px; bottom: 4px; left: 0; width: 0; border-radius: 999px;
+    background: var(--surface); box-shadow: var(--shadow-card);
+    transition: transform .3s cubic-bezier(.22, .61, .36, 1), width .3s cubic-bezier(.22, .61, .36, 1);
+    will-change: transform, width;
+  }
+  html.glass-mode .tabs .tab-indicator { background: #fff; }
+  .view { display: none; }
+  .view.active { display: block; animation: fadeUp .35s cubic-bezier(.22, .61, .36, 1) both; }
+
+  .pw-wrap { position: relative; }
+  .pw-toggle {
+    position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+    width: 30px; height: 30px; border-radius: 6px; display: grid; place-items: center; color: var(--text-3);
+  }
+  .pw-toggle:hover { color: var(--primary); background: var(--surface-2); }
+  .pw-toggle svg { width: 16px; height: 16px; }
+
+  /* ============ 管理面板 ============ */
+  .profile { padding: 28px 24px 24px; text-align: center; }
+  .avatar {
+    width: 76px; height: 76px; border-radius: 50%; margin: 0 auto 14px;
+    background: linear-gradient(135deg, var(--primary), #7ab0ff);
+    display: grid; place-items: center; color: #fff; font-size: 30px; font-weight: 700;
+    box-shadow: 0 6px 18px rgba(43, 109, 246, .35);
+  }
+  .p-name { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+  .p-mail { font-size: 13px; color: var(--text-3); margin-bottom: 14px; word-break: break-all; }
+  .p-level-row { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px; color: #fff; font-weight: 700; font-size: 13px; margin-bottom: 16px; }
+  .p-point { font-size: 13px; color: var(--text-2); margin-bottom: 18px; }
+  .p-point b { color: var(--primary); font-size: 16px; }
+  .p-menu { display: flex; flex-direction: column; gap: 4px; text-align: left; }
+  .p-menu a, .p-menu button {
+    display: flex; align-items: center; gap: 10px; width: 100%;
+    padding: 10px 12px; border-radius: 8px; font-size: 14px;
+    color: var(--text-2); transition: all .15s; background: none; border: none; cursor: pointer;
+  }
+  .p-menu a:hover, .p-menu button:hover { background: var(--surface-2); color: var(--text); }
+  .p-menu svg { width: 16px; height: 16px; }
+  .p-menu .danger:hover { background: #fff1f0; color: var(--red); }
+
+  .panel { padding: 22px 24px 24px; }
+  .panel .section-title { margin-bottom: 16px; }
+
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 18px; }
+  .stat { padding: 18px 20px; text-align: center; }
+  .stat .n { font-size: 24px; font-weight: 800; margin-bottom: 4px; }
+  .stat .t { font-size: 12.5px; color: var(--text-3); }
+  .stat .n.c2 { color: #f59e0b; } .stat .n.c3 { color: var(--green); }
+
+  .tiers { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  .tier { padding: 16px 16px 18px; border-radius: var(--radius); border: 1.5px solid var(--border); background: var(--surface-2); text-align: center; }
+  .tier .tname { font-size: 15px; font-weight: 800; color: #fff; padding: 4px 0; border-radius: 8px; margin-bottom: 10px; }
+  .tier .tzhe { font-size: 26px; font-weight: 800; }
+  .tier .tdesc { font-size: 12.5px; color: var(--text-3); margin-top: 4px; }
+  .tier.cur { border-color: var(--primary); box-shadow: 0 4px 14px rgba(43, 109, 246, .18); }
+  .tier .tag { margin-top: 10px; }
+
+  .calc { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+  .calc .field { margin-bottom: 0; }
+  .calc .input { width: 160px; }
+  .calc-out { font-size: 14px; color: var(--text-2); }
+  .calc-out b { color: var(--primary); font-size: 18px; }
+
+  /* ============ 会员升级购买 ============ */
+  .mbuy-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 16px; }
+  .mbuy-now { font-size: 13px; color: var(--text-3); }
+  .mbuy-now b { font-size: 15px; }
+  .mgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(178px, 1fr)); gap: 12px; }
+  .mcard {
+    position: relative; padding: 16px 16px 18px; border-radius: var(--radius);
+    border: 1.5px solid var(--border); background: var(--surface-2);
+    display: flex; flex-direction: column; gap: 8px; transition: all .18s;
+  }
+  .mcard:hover { border-color: var(--primary); transform: translateY(-2px); box-shadow: 0 8px 22px rgba(43,109,246,.14); }
+  .mcard.cur { border-color: var(--primary); background: var(--primary-soft); }
+  .mcard .mname { font-size: 15px; font-weight: 800; color: #fff; padding: 4px 0; border-radius: 8px; text-align: center; }
+  .mcard .mprice { font-size: 25px; font-weight: 800; color: var(--primary); line-height: 1.1; }
+  .mcard .mprice small { font-size: 13px; font-weight: 600; color: var(--text-3); margin-left: 3px; }
+  .mcard .mday { font-size: 12.5px; color: var(--text-3); }
+  .mcard .mdesc { font-size: 12px; color: var(--text-3); line-height: 1.6; min-height: 32px; }
+  .mcard .mbtns { display: flex; gap: 8px; margin-top: auto; }
+  .mcard .mbtns .btn { flex: 1; }
+  .mflags { display: flex; gap: 6px; flex-wrap: wrap; }
+  .mflag { font-size: 11px; padding: 2px 7px; border-radius: 5px; background: var(--surface); color: var(--text-3); border: 1px solid var(--border); }
+  .mflag.up { background: #fff7e6; color: #d46b08; border-color: #ffd591; }
+  html[data-theme="dark"] .mflag.up { background: rgba(245,158,11,.16); color: #ffc069; border-color: rgba(245,158,11,.4); }
+
+  .pays { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .pay {
+    display: flex; align-items: center; gap: 12px; padding: 14px 16px;
+    border: 1.5px solid var(--border); border-radius: var(--radius);
+    background: var(--surface); cursor: pointer; transition: all .15s;
+  }
+  .pay:hover { border-color: #c9d6f5; }
+  .pay.active { border-color: var(--primary); background: var(--primary-soft); }
+  .pay .pi { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; font-size: 19px; flex-shrink: 0; color: #fff; }
+  .pay .pn { font-size: 14px; font-weight: 600; }
+  .pay .pd { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+  .pay .radio { margin-left: auto; width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--border-strong); flex-shrink: 0; transition: all .15s; }
+  .pay.active .radio { border-color: var(--primary); background: var(--primary); box-shadow: inset 0 0 0 3px var(--surface); }
+  .mmsg { font-size: 13px; margin-top: 12px; min-height: 18px; }
+  .mmsg.ok { color: var(--green); }
+  .mmsg.err { color: #ef4444; }
+
+  html.mobile-layout { .layout { grid-template-columns: 1fr; } .wrap { padding: 16px 14px 0; } }
+</style>
+</head>
+<body>
+
+<div id="header"></div>
+
+<!-- ============ 登录 / 注册 门禁 ============ -->
+<div id="gate" class="gate" style="display:none">
+  <div class="gate-inner">
+    <div class="gate-brand">
+      <div class="gate-logo">👤</div>
+      <h1 data-i18n="账号中心">账号中心</h1>
+      <p data-i18n="登录后管理你的账户资料">登录后管理你的账户资料</p>
+    </div>
+
+    <div class="card gate-card anim-up">
+      <div class="tabs">
+        <button class="active" data-gate="login" data-i18n="登录">登录</button>
+        <button data-gate="register" data-i18n="注册">注册</button>
+        <span class="tab-indicator"></span>
+      </div>
+
+      <!-- 登录 -->
+      <div class="view active" id="g-login">
+        <div class="field">
+          <label class="field-label" data-i18n="邮箱 / 用户名">邮箱 / 用户名</label>
+          <input class="input" id="lUser" placeholder="you@example.com" autocomplete="username" />
+        </div>
+        <div class="field">
+          <label class="field-label" data-i18n="密码">密码</label>
+          <div class="pw-wrap">
+            <input class="input" id="lPwd" type="password" placeholder="请输入密码" autocomplete="current-password" />
+            <button class="pw-toggle" data-pw="lPwd" title="显示密码">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.8"/></svg>
+            </button>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-block" id="lSubmit">登录</button>
+      </div>
+
+      <!-- 注册 -->
+      <div class="view" id="g-register">
+        <div class="field">
+          <label class="field-label" data-i18n="邮箱">邮箱</label>
+          <input class="input" id="rMail" placeholder="you@example.com" autocomplete="email" />
+        </div>
+        <div class="field">
+          <label class="field-label" data-i18n="用户名">用户名</label>
+          <input class="input" id="rName" placeholder="2-16 个字符" autocomplete="username" />
+        </div>
+        <div class="field">
+          <label class="field-label" data-i18n="密码">密码</label>
+          <div class="pw-wrap">
+            <input class="input" id="rPwd" type="password" placeholder="至少 8 位，含字母和数字" autocomplete="new-password" />
+            <button class="pw-toggle" data-pw="rPwd" title="显示密码">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.8"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label" data-i18n="确认密码">确认密码</label>
+          <input class="input" id="rPwd2" type="password" placeholder="再次输入密码" autocomplete="new-password" />
+        </div>
+        <button class="btn btn-primary btn-block" id="rSubmit">注册</button>
+      </div>
+
+      <div class="gate-err" id="gErr"></div>
+    </div>
+
+    <a class="gate-store" href="store.html" data-i18n="进入商店" style="display:inline-block;margin-top:18px;color:var(--text-3);font-size:13.5px;text-decoration:none">进入商店 →</a>
+  </div>
+</div>
+
+<!-- ============ 管理面板 ============ -->
+<div id="app" class="wrap" style="display:none">
+  <div class="layout">
+    <aside class="card profile anim-up" id="profile"></aside>
+
+    <div>
+      <div class="card panel anim-up" id="settingsCard" style="display:none;margin-bottom:18px">
+        <div class="section-title" data-i18n="账户设置">账户设置</div>
+        <div class="field">
+          <label class="field-label" data-i18n="用户名">用户名</label>
+          <input class="input" id="setName" />
+        </div>
+        <div class="field">
+          <label class="field-label" data-i18n="邮箱">邮箱</label>
+          <input class="input" id="setMail" type="email" />
+        </div>
+        <div class="field">
+          <label class="field-label" data-i18n="手机号">手机号</label>
+          <input class="input" id="setPhone" />
+        </div>
+        <div class="field">
+          <label class="field-label" data-i18n="QQ">QQ</label>
+          <input class="input" id="setQQ" />
+        </div>
+        <div class="field">
+          <label class="field-label" data-i18n="微信">微信</label>
+          <input class="input" id="setWechat" />
+        </div>
+        <div class="field">
+          <label class="field-label" data-i18n="默认联系方式">默认联系方式</label>
+          <div class="seg" id="setContactSeg">
+            <span class="seg-thumb" id="setContactThumb"></span>
+            <button type="button" data-ct="qq">QQ</button>
+            <button type="button" data-ct="wechat">微信</button>
+            <button type="button" data-ct="mail">邮箱</button>
+            <button type="button" data-ct="phone">手机号</button>
+          </div>
+          <input type="hidden" id="setContact" value="mail" />
+        </div>
+        <div class="field">
+          <label class="field-label" data-i18n="修改密码（留空则不修改）">修改密码（留空则不修改）</label>
+          <input class="input" id="setPwd" type="password" placeholder="新密码" />
+        </div>
+        <div class="alert danger" id="setErr" style="display:none"></div>
+        <div style="display:flex;gap:10px;margin-top:6px">
+          <button class="btn btn-primary btn-sm" id="setSave" data-i18n="保存">保存</button>
+          <button class="btn btn-outline btn-sm" id="setCancel" data-i18n="取消">取消</button>
+        </div>
+      </div>
+
+      <div class="stats" id="stats"></div>
+
+      <div class="card panel anim-up" style="margin-bottom:18px">
+        <div class="section-title" data-i18n="升级会员">升级会员</div>
+        <div class="mbuy-head">
+          <div class="hint" style="margin:0" data-i18n="购买 LVIP / VIP / SVIP 会员，支付成功后立即生效，可在有效期内叠加时长">购买 LVIP / VIP / SVIP 会员，支付成功后立即生效，可在有效期内叠加时长</div>
+          <div class="mbuy-now" id="mbuyNow"></div>
+        </div>
+        <div class="mgrid" id="mgrid"></div>
+        <div class="hr"></div>
+        <div class="section-title" style="margin-bottom:14px" data-i18n="支付方式">支付方式</div>
+        <div class="pays" id="mpays"></div>
+        <div class="mmsg" id="mmsg"></div>
+        <div id="capMember" style="margin-top:14px"></div>
+        <div class="hint" data-i18n="会员权益以服务端记录为准：升级后等级立即提升，同级购买可在原到期日上叠加时长；到期后自动恢复为无折扣。">会员权益以服务端记录为准：升级后等级立即提升，同级购买可在原到期日上叠加时长；到期后自动恢复为无折扣。</div>
+      </div>
+
+      <div class="card panel anim-up" style="margin-bottom:18px">
+        <div class="section-title" data-i18n="会员等级与折扣">会员等级与折扣</div>
+        <div class="tiers" id="tiers"></div>
+        <div class="hr"></div>
+        <div class="section-title" style="margin-bottom:14px" data-i18n="折扣试算">折扣试算</div>
+        <div class="calc">
+          <div class="field">
+            <label class="field-label" data-i18n="原价（CNY）">原价（CNY）</label>
+            <input class="input" id="calcPrice" type="number" value="100" min="0" />
+          </div>
+          <div class="calc-out" id="calcOut"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="footer"></div>
+<button class="to-top" id="toTop" title="回到顶部"></button>
+
+<script src="assets/base.js"></script>
+<script src="assets/cap.js"></script>
+<script>
+const ICONS = {
+  order: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>',
+  cart:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2 3h3l2.4 12.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.6L21 7H6"/></svg>',
+  gift:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M3 12h18M12 8v13"/><path d="M12 8S9 3 7.5 4.5 9.5 8 12 8zM12 8s3-5 4.5-3.5S14.5 8 12 8z"/></svg>',
+  set:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 9 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 4.6 9a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg>',
+  out:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M10 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>',
+};
+
+const isMail = s => /^[\w.+-]+@[\w-]+(\.[\w-]+)+$/.test(s);
+const gate = document.getElementById('gate');
+const app = document.getElementById('app');
+
+/* ---------- 账号持久化 ---------- */
+function saveAccount(acct, token) {
+  localStorage.setItem('xj_user', JSON.stringify({
+    uid: acct.id, name: acct.name, mail: acct.mail, level: acct.level,
+    point: acct.point, banned: acct.banned, type: 'member',
+    phone: acct.phone || '', wechat: acct.wechat || '', contactType: acct.contactType || 'mail',
+    token: token || '',
+  }));
+}
+function getUser() { return XJ.user() || JSON.parse(localStorage.getItem('xj_user') || 'null'); }
+
+/* ---- Cap 人机验证控制器（会员购买支付确认） ---- */
+let capMember = { enabled: false, token: () => '', rerender: () => {} };
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function showGerr(msg) { const e = document.getElementById('gErr'); e.textContent = msg; e.classList.add('show'); }
+
+/* ---------- 门禁：登录 / 注册 滑动切换 ---------- */
+document.querySelector('.tabs').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-gate]');
+  if (!btn) return;
+  switchGate(btn.dataset.gate);
+});
+function switchGate(key) {
+  document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('active', b.dataset.gate === key));
+  document.querySelectorAll('#gate .view').forEach(v => v.classList.toggle('active', v.id === 'g-' + key));
+  moveIndicator();
+}
+function moveIndicator() {
+  const tabs = document.querySelector('.tabs');
+  if (!tabs) return;
+  const active = tabs.querySelector('button.active');
+  const ind = tabs.querySelector('.tab-indicator');
+  if (!active || !ind) return;
+  ind.style.width = active.offsetWidth + 'px';
+  ind.style.transform = 'translateX(' + active.offsetLeft + 'px)';
+}
+window.addEventListener('resize', () => requestAnimationFrame(moveIndicator));
+document.addEventListener('xj:langchange', () => requestAnimationFrame(moveIndicator));
+
+/* 显示 / 隐藏密码 */
+document.querySelectorAll('[data-pw]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const input = document.getElementById(btn.dataset.pw);
+    input.type = input.type === 'password' ? 'text' : 'password';
+  });
+});
+
+/* ---------- 登录 ---------- */
+document.getElementById('lSubmit').addEventListener('click', async () => {
+  const u = document.getElementById('lUser').value.trim();
+  const p = document.getElementById('lPwd').value;
+  document.getElementById('gErr').classList.remove('show');
+  if (!u || !p) { showGerr(XJ.tr('请输入邮箱或用户名')); return; }
+  try {
+    const r = await fetch('/api/account/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: u, pwd: p }) });
+    const j = await r.json();
+    if (!j.ok) { showGerr(j.msg || XJ.tr('登录失败')); return; }
+    saveAccount(j.account, j.token);
+    XJ.toast(XJ.tr('登录成功'));
+    enterApp();
+  } catch (e) { showGerr(XJ.tr('无法连接服务，请确认服务已启动')); }
+});
+
+/* ---------- 注册 ---------- */
+document.getElementById('rSubmit').addEventListener('click', async () => {
+  const mail = document.getElementById('rMail').value.trim();
+  const name = document.getElementById('rName').value.trim();
+  const pwd = document.getElementById('rPwd').value;
+  const pwd2 = document.getElementById('rPwd2').value;
+  document.getElementById('gErr').classList.remove('show');
+  if (!isMail(mail)) { showGerr(XJ.tr('请输入正确的邮箱地址')); return; }
+  if (name.length < 2) { showGerr(XJ.tr('用户名至少 2 个字符')); return; }
+  if (!/^(?=.*[A-Za-z])(?=.*\d).{8,}$/.test(pwd)) { showGerr(XJ.tr('密码需至少 8 位且包含字母与数字')); return; }
+  if (pwd !== pwd2) { showGerr(XJ.tr('两次输入的密码不一致')); return; }
+  try {
+    const r = await fetch('/api/account/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, mail, pwd }) });
+    const j = await r.json();
+    if (!j.ok) { showGerr(j.msg || XJ.tr('注册失败')); return; }
+    saveAccount(j.account, j.token);
+    XJ.toast(XJ.tr('注册成功，已自动登录'));
+    enterApp();
+  } catch (e) { showGerr(XJ.tr('无法连接服务，请确认服务已启动')); }
+});
+
+/* ---------- 进入 / 退出 管理面板 ---------- */
+function enterApp() {
+  const user = getUser();
+  if (!user || !user.uid) { showGate(); return; }
+  gate.style.display = 'none';
+  app.style.display = '';
+  renderMember(user);
+  XJ.init({ active: 'account' }); // 幂等：重新翻译动态内容
+}
+function showGate() {
+  app.style.display = 'none';
+  gate.style.display = '';
+  requestAnimationFrame(moveIndicator);
+}
+
+/* ---------- 渲染会员面板 ---------- */
+function renderMember(user) {
+  const L = XJ.levelInfo(user.level);
+  const isDiscount = L.rate < 1;
+  document.getElementById('profile').innerHTML = `
+    <div class="avatar">${esc(user.name || 'X').slice(0, 1).toUpperCase()}</div>
+    <div class="p-name">${esc(user.name)}</div>
+    <div class="p-mail">${esc(user.mail) || '未绑定邮箱'}</div>
+    <div class="p-level-row" style="background:${L.color}">${L.name}${isDiscount ? ' · ' + L.zhe + '折' : ''}</div>
+    <div class="p-point">我的积分 <b>${user.point || 0}</b></div>
+    <div class="p-menu">
+      <a href="order.html">${ICONS.order} 我的订单</a>
+      <a href="cart.html">${ICONS.cart} 我的购物车</a>
+      <a href="redeem.html">${ICONS.gift} 卡密兑换</a>
+      <button id="settingsBtn">${ICONS.set} 账户设置</button>
+      <button class="danger" id="logoutBtn">${ICONS.out} 退出登录</button>
+    </div>`;
+
+  document.getElementById('logoutBtn').addEventListener('click', () => {
+    localStorage.removeItem('xj_user');
+    XJ.toast(XJ.tr('已退出登录'));
+    setTimeout(() => location.reload(), 700);
+  });
+  document.getElementById('settingsBtn').addEventListener('click', openSettings);
+
+  /* 统计 */
+  const list = (function () { try { return JSON.parse(localStorage.getItem('xj_orders') || '[]'); } catch (e) { return []; } })();
+  const spend = list.reduce((n, o) => n + (o.total || 0), 0);
+  document.getElementById('stats').innerHTML = `
+    <div class="card stat"><div class="n c2">${spend.toFixed(2)}</div><div class="t">累计消费 CNY</div></div>
+    <div class="card stat"><div class="n c3">${user.point || 0}</div><div class="t">我的积分</div></div>
+    <div class="card stat"><div class="n" style="color:${L.color}">${isDiscount ? L.zhe + '折' : '无'}</div><div class="t">我的折扣</div></div>`;
+
+  document.getElementById('tiers').innerHTML = renderTiers(user.level);
+  initCalc(user.level);
+  renderMbPays();
+  loadMemberPlans();
+}
+
+/* 支付回跳（?upgraded=1）：从服务端拉取最新等级并刷新面板 */
+async function refreshAfterUpgrade() {
+  const u = getUser();
+  if (!u || !u.uid) return;
+  try {
+    const r = await fetch('/api/account/me?uid=' + encodeURIComponent(u.uid) + '&token=' + encodeURIComponent(u.token || ''));
+    const j = await r.json();
+    if (!j.ok || !j.account) return;
+    const a = j.account;
+    const u2 = Object.assign({}, u, {
+      level: a.level, point: a.point, banned: a.banned,
+      vipExpireAt: a.vipExpireAt, levelExpired: a.levelExpired,
+    });
+    localStorage.setItem('xj_user', JSON.stringify(u2));
+    renderMember(u2);
+    XJ.toast(XJ.tr('会员已升级，到账生效'));
+  } catch (e) {}
+}
+
+function renderTiers(curLevel) {
+  const order = ['svip', 'vip', 'lvip', 'none', ''];
+  return order.map(k => {
+    const L = XJ.LEVELS[k];
+    const isCur = String(curLevel || '') === k;
+    const zhe = L.zhe ? (L.zhe + '折') : '无折扣';
+    return `<div class="tier ${isCur ? 'cur' : ''}">
+      <div class="tname" style="background:${L.color}">${L.name}</div>
+      <div class="tzhe" style="color:${L.color}">${zhe}</div>
+      <div class="tdesc">${k === 'svip' ? '至尊会员专享' : k === 'vip' ? 'VIP 尊享' : k === 'lvip' ? '超级会员' : k === '' ? '未设置等级' : '默认等级'}</div>
+      ${isCur ? '<span class="tag blue">当前等级</span>' : ''}
+    </div>`;
+  }).join('');
+}
+
+function initCalc(level) {
+  const L = XJ.levelInfo(level);
+  const out = document.getElementById('calcOut');
+  function calc() {
+    const price = Number(document.getElementById('calcPrice').value) || 0;
+    const final = Number((price * L.rate).toFixed(2));
+    const off = Number((price - final).toFixed(2));
+    out.innerHTML = `你的等级 <b style="color:${L.color}">${L.name}</b>：原价 ${price.toFixed(2)} → 实付 <b>${final.toFixed(2)}</b> CNY（已省 ${off.toFixed(2)}）`;
+  }
+  const inp = document.getElementById('calcPrice');
+  if (inp) { inp.addEventListener('input', calc); calc(); }
+}
+
+/* ---------- 会员升级购买 ---------- */
+const MB_PAYS = [
+  { key: 'alipay', name: '支付宝',   desc: '跳转支付宝完成付款', emoji: '💙', color: 'linear-gradient(135deg,#1677ff,#4da3ff)' },
+  { key: 'wxpay',  name: '微信支付', desc: '扫码完成付款',       emoji: '💚', color: 'linear-gradient(135deg,#22c55e,#4ade80)' },
+];
+let mbPayKey = 'alipay';
+let MB_PLANS = [];
+
+/* POST 跳转支付：用服务端签好的参数自动提交隐藏表单（保留浏览器 UA/Referer） */
+function postPayForm(url, params) {
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = url;
+  form.style.display = 'none';
+  Object.keys(params).forEach(k => {
+    const inp = document.createElement('input');
+    inp.type = 'hidden'; inp.name = k; inp.value = params[k];
+    form.appendChild(inp);
+  });
+  document.body.appendChild(form);
+  form.submit();
+}
+
+function renderMbPays() {
+  const el = document.getElementById('mpays');
+  if (!el) return;
+  el.innerHTML = MB_PAYS.map(p => `
+    <div class="pay ${p.key === mbPayKey ? 'active' : ''}" data-mpay="${p.key}">
+      <span class="pi" style="background:${p.color}">${p.emoji}</span>
+      <div><div class="pn">${p.name}</div><div class="pd">${p.desc}</div></div>
+      <span class="radio"></span>
+    </div>`).join('');
+  el.querySelectorAll('[data-mpay]').forEach(x => x.addEventListener('click', () => {
+    mbPayKey = x.dataset.mpay;
+    renderMbPays();
+  }));
+}
+
+function renderMbPlans(list, cur, expireAt) {
+  const el = document.getElementById('mgrid');
+  if (!el) return;
+  if (!list.length) {
+    el.innerHTML = '<div class="hint" style="grid-column:1/-1">暂无可购买的会员套餐</div>';
+  } else {
+    el.innerHTML = list.map(p => `
+      <div class="mcard ${p.current ? 'cur' : ''}">
+        <div class="mname" style="background:${p.color}">${esc(p.levelName)}${p.zhe ? ' · ' + p.zhe + '折' : ''}</div>
+        <div class="mprice">${Number(p.price).toFixed(2)}<small>CNY</small></div>
+        <div class="mday">${esc(p.name)} · ${p.days} 天</div>
+        <div class="mdesc">${esc(p.desc || '')}</div>
+        <div class="mflags">
+          ${p.current ? '<span class="mflag">当前等级</span>' : ''}
+          ${p.upgrade ? '<span class="mflag up">可升级</span>' : ''}
+        </div>
+        <div class="mbtns">
+          <button class="btn ${p.current ? 'btn-outline' : 'btn-primary'} btn-sm" data-buy="${esc(p.id)}" ${p.current ? 'disabled' : ''}>${p.current ? '已拥有' : '立即开通'}</button>
+        </div>
+      </div>`).join('');
+    el.querySelectorAll('[data-buy]').forEach(b => b.addEventListener('click', () => buyMember(b.dataset.buy, b)));
+  }
+  const now = document.getElementById('mbuyNow');
+  if (now) {
+    const L = XJ.levelInfo(cur);
+    now.innerHTML = expireAt
+      ? `当前 <b style="color:${L.color}">${L.name}</b> · 有效期至 <b>${esc(expireAt)}</b>`
+      : `当前 <b style="color:${L.color}">${L.name}</b> · <span style="color:var(--text-3)">未设置有效期</span>`;
+  }
+}
+
+async function loadMemberPlans() {
+  const u = getUser();
+  try {
+    const url = '/api/member/plans' + (u && u.uid ? '?uid=' + encodeURIComponent(u.uid) + '&token=' + encodeURIComponent(u.token || '') : '');
+    const r = await fetch(url);
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.msg || '加载失败');
+    MB_PLANS = j.list || [];
+    renderMbPlans(MB_PLANS, j.current || '', j.expireAt || '');
+  } catch (e) {
+    const el = document.getElementById('mgrid');
+    if (el) el.innerHTML = '<div class="hint" style="grid-column:1/-1">会员套餐加载失败，请确认服务已启动</div>';
+  }
+}
+
+async function buyMember(planId, btn) {
+  const u = getUser();
+  const msg = document.getElementById('mmsg');
+  if (!u || !u.uid) { XJ.toast(XJ.tr('请先登录')); return; }
+  const plan = MB_PLANS.find(p => p.id === planId);
+  if (!plan) return;
+  if (capMember.enabled && !capMember.token()) { XJ.toast(XJ.tr('请先完成人机验证')); return; }
+  msg.className = 'mmsg'; msg.textContent = XJ.tr('正在创建订单…');
+  btn.disabled = true;
+  const oldText = btn.textContent;
+  btn.textContent = XJ.tr('下单中…');
+  try {
+    const r = await fetch('/api/member/order', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ uid: u.uid, token: u.token || '', planId: planId, pay: MB_PAYS.find(p => p.key === mbPayKey).name, capToken: capMember.token() }),
+    });
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.msg || XJ.tr('下单失败'));
+    const pr = await fetch('/api/pay?no=' + encodeURIComponent(j.no) + '&type=' + mbPayKey);
+    const pd = await pr.json();
+    if (!pd.ok) throw new Error(pd.msg || XJ.tr('支付发起失败'));
+    msg.className = 'mmsg ok';
+    msg.textContent = XJ.tr('订单已创建，正在跳转支付…');
+    XJ.toast(XJ.tr('正在跳转支付…'));
+    if (pd.payMethod === 'POST' && pd.payParams) { postPayForm(pd.payUrl, pd.payParams); return; }
+    setTimeout(() => { location.href = pd.payUrl; }, 500);
+  } catch (e) {
+    if (capMember.enabled) capMember.rerender();
+    msg.className = 'mmsg err';
+    msg.textContent = e.message || XJ.tr('下单失败');
+    btn.disabled = false;
+    btn.textContent = oldText;
+  }
+}
+
+/* ---------- 默认联系方式：滑动分段控件 ---------- */
+function setContactActive(val, move) {
+  const seg = document.getElementById('setContactSeg');
+  if (!seg) return;
+  seg.querySelectorAll('button[data-ct]').forEach(b => b.classList.toggle('active', b.dataset.ct === val));
+  document.getElementById('setContact').value = val;
+  if (move !== false) moveContactThumb();
+}
+function moveContactThumb() {
+  const seg = document.getElementById('setContactSeg');
+  const thumb = document.getElementById('setContactThumb');
+  if (!seg || !thumb) return;
+  const act = seg.querySelector('button.active');
+  if (!act) return;
+  thumb.style.width = act.offsetWidth + 'px';
+  thumb.style.transform = 'translateX(' + act.offsetLeft + 'px)';
+}
+document.getElementById('setContactSeg').addEventListener('click', e => {
+  const b = e.target.closest('button[data-ct]');
+  if (!b) return;
+  setContactActive(b.dataset.ct);
+});
+window.addEventListener('resize', () => requestAnimationFrame(moveContactThumb));
+document.addEventListener('xj:langchange', () => moveContactThumb());
+
+/* ---------- 账户设置（名字 / 邮箱 / 等） ---------- */
+function openSettings() {
+  const u = getUser();
+  document.getElementById('setName').value = u.name || '';
+  document.getElementById('setMail').value = u.mail || '';
+  document.getElementById('setPhone').value = u.phone || '';
+  document.getElementById('setQQ').value = u.qq || '';
+  document.getElementById('setWechat').value = u.wechat || '';
+  document.getElementById('setPwd').value = '';
+  document.getElementById('setErr').style.display = 'none';
+  document.getElementById('settingsCard').style.display = '';
+  setContactActive(u.contactType || 'mail', false);
+  requestAnimationFrame(() => moveContactThumb());
+  document.getElementById('settingsCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+document.getElementById('setCancel').addEventListener('click', () => {
+  document.getElementById('settingsCard').style.display = 'none';
+});
+document.getElementById('setSave').addEventListener('click', async () => {
+  const u = getUser();
+  const err = document.getElementById('setErr');
+  err.style.display = 'none';
+  const body = {
+    uid: u.uid,
+    token: u.token || '',
+    name: document.getElementById('setName').value.trim(),
+    mail: document.getElementById('setMail').value.trim(),
+    phone: document.getElementById('setPhone').value.trim(),
+    qq: document.getElementById('setQQ').value.trim(),
+    wechat: document.getElementById('setWechat').value.trim(),
+    contactType: document.getElementById('setContact').value,
+    pwd: document.getElementById('setPwd').value,
+  };
+  if (!body.name) { err.textContent = XJ.tr('用户名不能为空'); err.style.display = ''; return; }
+  try {
+    const r = await fetch('/api/account/update', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const j = await r.json();
+    if (!j.ok) { err.textContent = j.msg || XJ.tr('保存失败'); err.style.display = ''; return; }
+    const u2 = Object.assign({}, getUser(), {
+      name: j.account.name, mail: j.account.mail, phone: j.account.phone,
+      qq: j.account.qq, wechat: j.account.wechat, contactType: j.account.contactType,
+    });
+    localStorage.setItem('xj_user', JSON.stringify(u2));
+    XJ.toast(XJ.tr('账户设置已保存'));
+    document.getElementById('settingsCard').style.display = 'none';
+    renderMember(u2);
+  } catch (e) { err.textContent = XJ.tr('保存失败，请确认服务已启动'); err.style.display = ''; }
+});
+
+/* ---------- 启动 ---------- */
+XJ.guardBanned();
+const curUser = getUser();
+
+/* 会员购买支付确认：挂载 Cap 验证组件（仅服务端启用时渲染） */
+if (window.CapGuard) CapGuard.mount(document.getElementById('capMember'), function () {}).then(function (c) { capMember = c; });
+if (curUser && curUser.uid) {
+  enterApp();
+  if (new URLSearchParams(location.search).get('upgraded') === '1') setTimeout(refreshAfterUpgrade, 600);
+} else {
+  showGate();
+  XJ.init({ active: 'account' });
+}
+</script>
+</body>
+</html>

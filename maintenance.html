@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>网站维护中 · XJ Store</title>
+<script src="assets/head.js"></script>
+<link rel="stylesheet" href="assets/base.css" />
+<style>
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    display: grid; place-items: center; padding: 24px;
+    background:
+      radial-gradient(1200px 600px at 50% -10%, var(--primary-soft), transparent 60%),
+      var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  }
+  .card {
+    width: 100%; max-width: 440px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card); padding: 40px 34px 34px; text-align: center;
+    animation: pop .5s cubic-bezier(.22,.61,.36,1) both;
+  }
+  @keyframes pop { from { opacity: 0; transform: translateY(16px) scale(.98); } to { opacity: 1; transform: none; } }
+  .icon {
+    width: 76px; height: 76px; margin: 0 auto 18px; border-radius: 20px;
+    display: grid; place-items: center; font-size: 38px; color: #fff;
+    background: linear-gradient(135deg, var(--primary), #7ab0ff);
+    box-shadow: 0 10px 30px rgba(43,109,246,.3);
+  }
+  h1 { font-size: 23px; font-weight: 800; margin: 0 0 10px; letter-spacing: -.3px; }
+  .sub { color: var(--text-2); font-size: 14.5px; line-height: 1.8; margin: 0 0 18px; }
+  .msg {
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px;
+    padding: 14px 16px; font-size: 13.5px; color: var(--text-2); line-height: 1.8;
+    margin: 0 0 22px; display: none;
+  }
+  .msg.show { display: block; }
+  .meta { display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: var(--text-3); margin-bottom: 22px; }
+  .meta a { color: var(--primary); text-decoration: none; }
+  .bar { height: 4px; border-radius: 999px; background: var(--surface-2); overflow: hidden; margin: 0 0 22px; }
+  .bar::after {
+    content: ""; display: block; height: 100%; width: 40%; border-radius: 999px;
+    background: linear-gradient(90deg, var(--primary), #7ab0ff);
+    animation: slide 1.4s ease-in-out infinite;
+  }
+  @keyframes slide { 0% { transform: translateX(-120%); } 100% { transform: translateX(320%); } }
+  .admin-hint {
+    font-size: 12.5px; color: var(--text-3); border-top: 1px dashed var(--border);
+    padding-top: 16px; line-height: 1.7;
+  }
+  .admin-hint a { color: var(--primary); text-decoration: none; font-weight: 600; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">🛠️</div>
+    <h1 id="title">网站维护中</h1>
+    <p class="sub" id="sub">亲爱的用户，本站正在升级维护，暂时无法访问。给您带来不便，敬请谅解，我们会尽快恢复服务。</p>
+    <div class="msg" id="msg"></div>
+    <div class="bar"></div>
+    <div class="meta" id="meta"></div>
+    <div class="admin-hint">
+      管理员请前往 <a href="admin.html">管理后台</a> 关闭「维护模式」后恢复访问。
+    </div>
+  </div>
+
+<script>
+  (function () {
+    var elTitle = document.getElementById('title');
+    var elSub = document.getElementById('sub');
+    var elMsg = document.getElementById('msg');
+    var elMeta = document.getElementById('meta');
+
+    function fill(site) {
+      if (!site) return;
+      if (site.name) document.title = '网站维护中 · ' + site.name;
+      if (site.maintenanceMsg && site.maintenanceMsg.trim()) {
+        elMsg.textContent = site.maintenanceMsg.trim();
+        elMsg.classList.add('show');
+      }
+      var lines = [];
+      if (site.name) lines.push('商店：' + site.name);
+      lines.push('客服邮箱：3805506653@qq.com');
+      lines.push('客服 QQ：3805506653');
+      elMeta.innerHTML = lines.map(function (l) { return '<div>' + l + '</div>'; }).join('');
+    }
+
+    if (typeof fetch === 'function') {
+      fetch('/api/site').then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) { if (j && j.ok) fill(j.site); })
+        .catch(function () {});
+    }
+  })();
+</script>
+</body>
+</html>

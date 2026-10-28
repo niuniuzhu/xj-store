@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>个人中心 · XJ Store</title>
+<script src="assets/head.js"></script>
+<link rel="stylesheet" href="assets/base.css" />
+<style>
+  .wrap { width: 100%; max-width: min(var(--page-w), 100% - 32px); margin: 0 auto; padding: 22px 22px 0; }
+  .layout { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 18px; align-items: start; }
+
+  /* 资料卡 */
+  .profile { padding: 28px 24px 24px; text-align: center; }
+  .avatar {
+    width: 76px; height: 76px; border-radius: 50%; margin: 0 auto 14px;
+    background: linear-gradient(135deg, var(--primary), #7ab0ff);
+    display: grid; place-items: center; color: #fff; font-size: 30px; font-weight: 700;
+    box-shadow: 0 6px 18px rgba(43, 109, 246, .35);
+  }
+  .p-name { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+  .p-mail { font-size: 13px; color: var(--text-3); margin-bottom: 14px; word-break: break-all; }
+  .p-level-row { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px; color: #fff; font-weight: 700; font-size: 13px; margin-bottom: 16px; }
+  .p-point { font-size: 13px; color: var(--text-2); margin-bottom: 18px; }
+  .p-point b { color: var(--primary); font-size: 16px; }
+  .p-menu { display: flex; flex-direction: column; gap: 4px; text-align: left; }
+  .p-menu a, .p-menu button {
+    display: flex; align-items: center; gap: 10px; width: 100%;
+    padding: 10px 12px; border-radius: 8px; font-size: 14px;
+    color: var(--text-2); transition: all .15s;
+  }
+  .p-menu a:hover, .p-menu button:hover { background: var(--surface-2); color: var(--text); }
+  .p-menu svg { width: 16px; height: 16px; }
+  .p-menu .danger:hover { background: #fff1f0; color: var(--red); }
+
+  /* 右侧 */
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 18px; }
+  .stat { padding: 18px 20px; text-align: center; }
+  .stat .n { font-size: 24px; font-weight: 800; margin-bottom: 4px; }
+  .stat .t { font-size: 12.5px; color: var(--text-3); }
+  .stat .n.c1 { color: var(--primary); } .stat .n.c2 { color: #f59e0b; } .stat .n.c3 { color: var(--green); }
+
+  .panel { padding: 22px 24px 24px; }
+  .panel .section-title { margin-bottom: 16px; }
+
+  /* 会员等级表 */
+  .tiers { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  .tier { padding: 16px 16px 18px; border-radius: var(--radius); border: 1.5px solid var(--border); background: var(--surface-2); text-align: center; }
+  .tier .tname { font-size: 15px; font-weight: 800; color: #fff; padding: 4px 0; border-radius: 8px; margin-bottom: 10px; }
+  .tier .tzhe { font-size: 26px; font-weight: 800; }
+  .tier .tdesc { font-size: 12.5px; color: var(--text-3); margin-top: 4px; }
+  .tier.cur { border-color: var(--primary); box-shadow: 0 4px 14px rgba(43,109,246,.18); }
+  .tier .tag { margin-top: 10px; }
+
+  /* 折扣试算 */
+  .calc { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+  .calc .field { margin-bottom: 0; }
+  .calc .input { width: 160px; }
+  .calc-out { font-size: 14px; color: var(--text-2); }
+  .calc-out b { color: var(--primary); font-size: 18px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th { text-align: left; font-weight: 600; color: var(--text-3); font-size: 12.5px; padding: 0 12px 12px; border-bottom: 1px solid var(--border); }
+  td { padding: 14px 12px; border-bottom: 1px solid var(--border); color: var(--text-2); }
+  tr:last-child td { border-bottom: none; }
+  td.no { font-family: ui-monospace, Consolas, monospace; font-size: 12.5px; color: var(--text); }
+
+  .empty-row { text-align: center; padding: 40px 0; color: var(--text-3); font-size: 13.5px; }
+
+  .notlogin { text-align: center; padding: 70px 20px; }
+  .notlogin .btn { margin-top: 18px; }
+
+  html.mobile-layout {
+    .layout { grid-template-columns: 1fr; }
+    .wrap { padding: 16px 14px 0; }
+  }
+</style>
+</head>
+<body>
+
+<div id="header"></div>
+
+<div class="wrap">
+  <div class="layout">
+    <aside class="card profile anim-up" id="profile"></aside>
+
+    <div>
+      <div class="card panel anim-up" id="settingsCard" style="display:none;margin-bottom:18px">
+        <div class="section-title">账户设置</div>
+        <div class="field">
+          <label class="field-label">用户名</label>
+          <input class="input" id="setName" />
+        </div>
+        <div class="field">
+          <label class="field-label">邮箱</label>
+          <input class="input" id="setMail" type="email" />
+        </div>
+        <div class="field">
+          <label class="field-label">手机号</label>
+          <input class="input" id="setPhone" />
+        </div>
+        <div class="field">
+          <label class="field-label">QQ</label>
+          <input class="input" id="setQQ" />
+        </div>
+        <div class="field">
+          <label class="field-label">微信</label>
+          <input class="input" id="setWechat" />
+        </div>
+        <div class="field">
+          <label class="field-label">默认联系方式</label>
+          <div class="seg" id="setContactSeg">
+            <span class="seg-thumb" id="setContactThumb"></span>
+            <button type="button" data-ct="qq">QQ</button>
+            <button type="button" data-ct="wechat">微信</button>
+            <button type="button" data-ct="mail">邮箱</button>
+            <button type="button" data-ct="phone">手机号</button>
+          </div>
+          <input type="hidden" id="setContact" value="mail" />
+        </div>
+        <div class="field">
+          <label class="field-label">修改密码（留空则不修改）</label>
+          <input class="input" id="setPwd" type="password" placeholder="新密码" />
+        </div>
+        <div class="alert danger" id="setErr" style="display:none"></div>
+        <div style="display:flex;gap:10px;margin-top:6px">
+          <button class="btn btn-primary btn-sm" id="setSave">保存</button>
+          <button class="btn btn-outline btn-sm" id="setCancel">取消</button>
+        </div>
+      </div>
+      <div class="stats" id="stats"></div>
+
+      <div class="card panel anim-up d2" style="margin-bottom:18px">
+        <div class="section-title">会员等级与折扣</div>
+        <div class="tiers" id="tiers"></div>
+        <div class="hr"></div>
+        <div class="section-title" style="margin-bottom:14px">折扣试算（会员价仅在下单时计入，列表仍为原价）</div>
+        <div class="calc">
+          <div class="field">
+            <label class="field-label">原价（CNY）</label>
+            <input class="input" id="calcPrice" type="number" value="100" min="0" />
+          </div>
+          <div class="calc-out" id="calcOut"></div>
+        </div>
+      </div>
+
+      <div class="card panel anim-up d3" style="margin-bottom:18px">
+        <div class="section-title">最近订单</div>
+        <div id="orders"></div>
+      </div>
+
+      <div class="card panel anim-up d4">
+        <div class="section-title">我的购买记录</div>
+        <div id="myPurchases"></div>
+      </div>
+
+      <div class="card panel anim-up d5" id="favorites">
+        <div class="section-title">我的收藏</div>
+        <div id="myFavorites"><div class="empty-row">加载中…</div></div>
+      </div>
+
+      <div class="card panel anim-up d5">
+        <div class="section-title">我的兑换记录</div>
+        <div id="myRedemptions"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="footer"></div>
+<button class="to-top" id="toTop" title="回到顶部"></button>
+
+<script src="assets/base.js"></script>
+<script>
+const ICONS = {
+  order: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>',
+  cart:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2 3h3l2.4 12.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.6L21 7H6"/></svg>',
+  heart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 20s-7-4.4-7-9.4A4 4 0 0 1 12 8a4 4 0 0 1 7 2.6C19 15.6 12 20 12 20z"/></svg>',
+  set:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 9 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 4.6 9a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg>',
+  out:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M10 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>',
+  gift:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M3 12h18M12 8v13"/><path d="M12 8S9 3 7.5 4.5 9.5 8 12 8zM12 8s3-5 4.5-3.5S14.5 8 12 8z"/></svg>',
+};
+
+function getUser() { return XJ.user() || JSON.parse(localStorage.getItem('xj_user') || 'null'); }
+function orders() { try { return JSON.parse(localStorage.getItem('xj_orders') || '[]'); } catch (e) { return []; } }
+
+const user = getUser();
+XJ.guardBanned(); // 封禁账户不可查看个人中心，立即跳转封禁页
+
+/* 未登录 / 游客：引导登录 */
+if (!user || !user.uid) {
+  document.getElementById('profile').innerHTML = `
+    <div class="notlogin">
+      <div class="avatar">👤</div>
+      <h2 style="margin:10px 0 6px;font-size:18px">尚未登录</h2>
+      <p style="color:var(--text-3);font-size:13.5px">登录后可查看会员等级、折扣与购买记录</p>
+      <a class="btn btn-primary" href="login.html">去登录 / 注册</a>
+    </div>`;
+  document.getElementById('stats').innerHTML = '';
+  document.getElementById('tiers').innerHTML = renderTiers('');
+  document.getElementById('orders').innerHTML = `<div class="empty-row">登录后查看订单</div>`;
+  document.getElementById('myPurchases').innerHTML = `<div class="empty-row">登录后查看购买记录</div>`;
+  initCalc('');
+  XJ.init({ active: 'about' });
+} else {
+  renderMember(user);
+}
+
+function renderMember(user) {
+  const L = XJ.levelInfo(user.level);
+  const isDiscount = L.rate < 1;
+  document.getElementById('profile').innerHTML = `
+    <div class="avatar">${(user.name || 'X').slice(0, 1).toUpperCase()}</div>
+    <div class="p-name">${user.name}</div>
+    <div class="p-mail">${user.mail || '未绑定邮箱'}</div>
+    <div class="p-level-row" style="background:${L.color}">${L.name}${isDiscount ? ' · ' + L.zhe + '折' : ''}</div>
+    <div class="p-point">我的积分 <b>${user.point || 0}</b></div>
+    <div class="p-menu">
+      <a href="order.html">${ICONS.order} 我的订单</a>
+      <a href="cart.html">${ICONS.cart} 我的购物车</a>
+      <a href="redeem.html">${ICONS.gift} 卡密兑换</a>
+      <a href="#favorites">${ICONS.heart} 我的收藏</a>
+      <button id="settingsBtn">${ICONS.set} 账户设置</button>
+      <button class="danger" id="logoutBtn">${ICONS.out} 退出登录</button>
+    </div>`;
+
+  document.getElementById('logoutBtn').addEventListener('click', () => {
+    localStorage.removeItem('xj_user');
+    XJ.toast('已退出登录');
+    setTimeout(() => location.href = 'login.html', 700);
+  });
+
+  document.getElementById('settingsBtn').addEventListener('click', openSettings);
+
+  /* 统计 */
+  const list = orders();
+  const spend = list.reduce((n, o) => n + (o.total || 0), 0);
+  document.getElementById('stats').innerHTML = `
+    <div class="card stat"><div class="n c1">${list.length}</div><div class="t">累计订单</div></div>
+    <div class="card stat"><div class="n c2">${spend.toFixed(2)}</div><div class="t">累计消费 CNY</div></div>
+    <div class="card stat"><div class="n c3">${user.point || 0}</div><div class="t">我的积分</div></div>
+    <div class="card stat"><div class="n" style="color:${L.color}">${isDiscount ? L.zhe + '折' : '无'}</div><div class="t">我的折扣</div></div>`;
+
+  document.getElementById('tiers').innerHTML = renderTiers(user.level);
+
+  /* 最近订单 */
+  const STATUS = { paid: ['已完成', 'green'], pending: ['待支付', 'orange'], delivering: ['交付中', 'blue'], refunded: ['已退款', 'red'] };
+  document.getElementById('orders').innerHTML = list.length ? `
+    <table>
+      <thead><tr><th>订单号</th><th>下单时间</th><th>金额</th><th>状态</th><th></th></tr></thead>
+      <tbody>
+        ${list.slice(0, 8).map(o => {
+          const st = STATUS[o.status] || STATUS.paid;
+          return `<tr>
+            <td class="no">${o.no}</td>
+            <td>${o.serverTime || o.time}</td>
+            <td>${Number(o.total || 0).toFixed(2)} CNY</td>
+            <td><span class="tag ${st[1]}">${st[0]}</span></td>
+            <td style="text-align:right"><a href="order.html?no=${o.no}" style="color:var(--primary);font-size:13px">查看</a></td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>` : `<div class="empty-row">还没有订单记录，<a href="store.html" style="color:var(--primary)">去商店看看</a></div>`;
+
+  /* 我的购买记录（服务端按账户聚合） */
+  fetch('/api/account/purchases?uid=' + encodeURIComponent(user.uid) + '&token=' + encodeURIComponent(user.token || ''))
+    .then(r => r.json())
+    .then(j => {
+      const arr = (j.ok && j.list) || [];
+      document.getElementById('myPurchases').innerHTML = arr.length ? `
+        <table>
+          <thead><tr><th>商品</th><th style="width:90px">金额</th><th style="width:80px">方式</th><th style="width:130px">时间</th></tr></thead>
+          <tbody>
+            ${arr.map(p => `<tr>
+              <td>${p.productTitle}</td>
+              <td>${Number(p.amount || 0).toFixed(2)}</td>
+              <td>${p.pay || '-'}</td>
+              <td>${p.time}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>` : `<div class="empty-row">暂无购买记录</div>`;
+    })
+    .catch(() => { document.getElementById('myPurchases').innerHTML = `<div class="empty-row">无法加载（请确认服务已启动）</div>`; });
+
+  /* 我的兑换记录（服务端权威，并同步本地 user） */
+  fetch('/api/account/me?uid=' + encodeURIComponent(user.uid) + '&token=' + encodeURIComponent(user.token || ''))
+    .then(r => r.json())
+    .then(j => {
+      const acct = (j.ok && j.account) || null;
+      const arr = (acct && acct.redemptions) || [];
+      if (acct) {
+        const u2 = Object.assign({}, getUser(), {
+          level: acct.level, point: acct.point, vipExpireAt: acct.vipExpireAt,
+          redemptions: acct.redemptions || [], name: acct.name,
+        });
+        localStorage.setItem('xj_user', JSON.stringify(u2));
+      }
+      document.getElementById('myRedemptions').innerHTML = arr.length ? `
+        <table>
+          <thead><tr><th>卡密</th><th style="width:130px">获得权益</th><th style="width:110px">时间</th></tr></thead>
+          <tbody>
+            ${arr.map(h => `<tr>
+              <td class="no">${h.code}</td>
+              <td><span class="tag blue">${h.desc}</span></td>
+              <td>${h.time || ''}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>` : `<div class="empty-row">暂无兑换记录，<a href="redeem.html" style="color:var(--primary)">去兑换卡密</a></div>`;
+    })
+    .catch(() => { document.getElementById('myRedemptions').innerHTML = `<div class="empty-row">无法加载（请确认服务已启动）</div>`; });
+
+  /* 我的收藏（服务端按账户存储，可在此直接取消收藏） */
+  function renderFavorites(list) {
+    const box = document.getElementById('myFavorites');
+    if (!list.length) {
+      box.innerHTML = `<div class="empty-row">还没有收藏，<a href="store.html" style="color:var(--primary)">去商店逛逛</a></div>`;
+      return;
+    }
+    box.innerHTML = `
+      <table>
+        <thead><tr><th style="width:46px"></th><th>商品</th><th style="width:110px">价格</th><th style="width:150px;text-align:right">操作</th></tr></thead>
+        <tbody>
+          ${list.map(p => {
+            const prices = (p.specs || []).map(s => (s.price === undefined || s.price === null) ? Number(p.price) : Number(s.price));
+            const min = prices.length ? Math.min(...prices) : Number(p.price);
+            const multi = prices.length > 1 && Math.max(...prices) > min;
+            return `<tr>
+              <td><span class="thumb-sm" style="background:${p.color}">${p.image ? `<img src="${p.image}" alt="" style="width:100%;height:100%;object-fit:cover" />` : (p.emoji || '📦')}</span></td>
+              <td>
+                <div class="td-name">${p.title}</div>
+                <div style="font-size:12px;color:var(--text-3)">${p.sub || ''}${p.status === 'off' ? ' · <span style="color:var(--red)">已下架</span>' : ''}</div>
+              </td>
+              <td>${min.toFixed(2)}${multi ? ' 起' : ''} CNY</td>
+              <td style="text-align:right">
+                <a href="commodity.html?id=${p.id}" style="color:var(--primary);font-size:13px;margin-right:10px">查看</a>
+                <button class="mini danger" data-unfav="${p.id}">取消收藏</button>
+              </td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>`;
+    box.querySelectorAll('[data-unfav]').forEach(el => el.addEventListener('click', async () => {
+      try {
+        const r = await fetch('/api/account/favorite', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ uid: user.uid, token: user.token || '', id: el.dataset.unfav }),
+        });
+        const j = await r.json();
+        if (j.ok) { XJ.toast('已取消收藏'); loadFavorites(); }
+        else XJ.toast(j.msg || '操作失败');
+      } catch (e) { XJ.toast('操作失败，请确认服务已启动'); }
+    }));
+  }
+  function loadFavorites() {
+    fetch('/api/account/favorites?uid=' + encodeURIComponent(user.uid) + '&token=' + encodeURIComponent(user.token || ''))
+      .then(r => r.json())
+      .then(j => renderFavorites((j.ok && j.list) || []))
+      .catch(() => { document.getElementById('myFavorites').innerHTML = `<div class="empty-row">无法加载（请确认服务已启动）</div>`; });
+  }
+  loadFavorites();
+
+  initCalc(user.level);
+  XJ.init({ active: 'about' });
+}
+
+function renderTiers(curLevel) {
+  const order = ['svip', 'vip', 'lvip', 'none', ''];
+  return order.map(k => {
+    const L = XJ.LEVELS[k];
+    const isCur = String(curLevel || '') === k;
+    const zhe = L.zhe ? (L.zhe + '折') : '无折扣';
+    return `<div class="tier ${isCur ? 'cur' : ''}">
+      <div class="tname" style="background:${L.color}">${L.name}</div>
+      <div class="tzhe" style="color:${L.color}">${zhe}</div>
+      <div class="tdesc">${k === 'svip' ? '至尊会员专享' : k === 'vip' ? 'VIP 尊享' : k === 'lvip' ? '超级会员' : k === '' ? '未设置等级' : '默认等级'}</div>
+      ${isCur ? '<span class="tag blue">当前等级</span>' : ''}
+    </div>`;
+  }).join('');
+}
+
+function initCalc(level) {
+  const L = XJ.levelInfo(level);
+  const out = document.getElementById('calcOut');
+  function calc() {
+    const price = Number(document.getElementById('calcPrice').value) || 0;
+    const final = Number((price * L.rate).toFixed(2));
+    const off = Number((price - final).toFixed(2));
+    out.innerHTML = `你的等级 <b style="color:${L.color}">${L.name}</b>：原价 ${price.toFixed(2)} → 实付 <b>${final.toFixed(2)}</b> CNY（已省 ${off.toFixed(2)}）`;
+  }
+  const inp = document.getElementById('calcPrice');
+  if (inp) { inp.addEventListener('input', calc); calc(); }
+}
+
+/* ---------- 账户设置 ---------- */
+/* ---------- 默认联系方式：滑动分段控件 ---------- */
+function setContactActive(val, move) {
+  const seg = document.getElementById('setContactSeg');
+  if (!seg) return;
+  seg.querySelectorAll('button[data-ct]').forEach(b => b.classList.toggle('active', b.dataset.ct === val));
+  document.getElementById('setContact').value = val;
+  if (move !== false) moveContactThumb();
+}
+function moveContactThumb() {
+  const seg = document.getElementById('setContactSeg');
+  const thumb = document.getElementById('setContactThumb');
+  if (!seg || !thumb) return;
+  const act = seg.querySelector('button.active');
+  if (!act) return;
+  thumb.style.width = act.offsetWidth + 'px';
+  thumb.style.transform = 'translateX(' + act.offsetLeft + 'px)';
+}
+document.getElementById('setContactSeg').addEventListener('click', e => {
+  const b = e.target.closest('button[data-ct]');
+  if (!b) return;
+  setContactActive(b.dataset.ct);
+});
+
+/* ---------- 账户设置 ---------- */
+function openSettings() {
+  const u = getUser();
+  document.getElementById('setName').value = u.name || '';
+  document.getElementById('setMail').value = u.mail || '';
+  document.getElementById('setPhone').value = u.phone || '';
+  document.getElementById('setQQ').value = u.qq || '';
+  document.getElementById('setWechat').value = u.wechat || '';
+  document.getElementById('setPwd').value = '';
+  const err = document.getElementById('setErr');
+  err.style.display = 'none';
+  const card = document.getElementById('settingsCard');
+  card.style.display = '';
+  setContactActive(u.contactType || 'mail', false);
+  requestAnimationFrame(() => moveContactThumb());
+  card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+/* 面板缩放 / 切换语言（标签宽度变化）时重定位滑块 */
+window.addEventListener('resize', () => requestAnimationFrame(moveContactThumb));
+document.addEventListener('xj:langchange', () => { moveContactThumb(); });
+document.getElementById('setCancel').addEventListener('click', () => {
+  document.getElementById('settingsCard').style.display = 'none';
+});
+document.getElementById('setSave').addEventListener('click', async () => {
+  const u = getUser();
+  const err = document.getElementById('setErr');
+  err.style.display = 'none';
+  const body = {
+    uid: u.uid,
+    token: u.token || '',
+    name: document.getElementById('setName').value.trim(),
+    mail: document.getElementById('setMail').value.trim(),
+    phone: document.getElementById('setPhone').value.trim(),
+    qq: document.getElementById('setQQ').value.trim(),
+    wechat: document.getElementById('setWechat').value.trim(),
+    contactType: document.getElementById('setContact').value,
+    pwd: document.getElementById('setPwd').value,
+  };
+  if (!body.name) { err.textContent = XJ.tr('用户名不能为空'); err.style.display = ''; return; }
+  try {
+    const r = await fetch('/api/account/update', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const j = await r.json();
+    if (!j.ok) { err.textContent = j.msg || XJ.tr('保存失败'); err.style.display = ''; return; }
+    const u2 = Object.assign({}, getUser(), {
+      name: j.account.name, mail: j.account.mail, phone: j.account.phone,
+      qq: j.account.qq, wechat: j.account.wechat, contactType: j.account.contactType,
+    });
+    localStorage.setItem('xj_user', JSON.stringify(u2));
+    XJ.toast(XJ.tr('账户设置已保存'));
+    document.getElementById('settingsCard').style.display = 'none';
+    renderMember(u2);
+  } catch (e) { err.textContent = XJ.tr('保存失败，请确认服务已启动'); err.style.display = ''; }
+});
+</script>
+</body>
+</html>

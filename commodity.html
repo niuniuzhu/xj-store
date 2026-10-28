@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>商品详情 · XJ Store</title>
+<script src="assets/head.js"></script>
+<link rel="stylesheet" href="assets/base.css" />
+<style>
+  .wrap { width: 100%; max-width: min(var(--page-w), 100% - 32px); margin: 0 auto; padding: 18px 22px 0; }
+
+  .detail-grid {
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+    gap: 18px; align-items: start;
+  }
+
+  /* 图库 */
+  .gallery { padding: 22px; }
+  .gallery-main {
+    border-radius: 12px; aspect-ratio: 1 / 1;
+    display: grid; place-items: center; position: relative; overflow: hidden;
+  }
+  .gallery-main::after {
+    content: ""; position: absolute; inset: 0;
+    background: radial-gradient(circle at 30% 22%, rgba(255,255,255,.4), transparent 62%);
+  }
+  .gallery-emoji {
+    font-size: 150px; line-height: 1; position: relative; z-index: 1;
+    filter: drop-shadow(0 10px 26px rgba(0,0,0,.22));
+    animation: float 5s ease-in-out infinite;
+  }
+  @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+  .thumbs { display: flex; gap: 10px; margin-top: 14px; }
+  .thumb-mini {
+    width: 62px; height: 62px; border-radius: 10px; display: grid; place-items: center;
+    font-size: 26px; border: 2px solid transparent; cursor: pointer;
+    transition: border-color .15s, transform .15s; position: relative; overflow: hidden;
+  }
+  .thumb-mini:hover { transform: translateY(-2px); }
+  .thumb-mini.active { border-color: var(--primary); }
+
+  /* 信息 */
+  .info { padding: 26px 28px 28px; }
+  .info-cat { font-size: 13px; color: var(--text-3); margin-bottom: 10px; }
+  .info-cat b { color: var(--text-2); font-weight: 500; }
+  .info-title { font-size: 30px; font-weight: 800; letter-spacing: -.4px; margin: 0 0 14px; line-height: 1.25; }
+  .info-tags { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 22px; }
+  .price-label { font-size: 14px; color: var(--text-2); margin-bottom: 6px; }
+  .price-main { display: flex; align-items: baseline; gap: 8px; color: var(--primary); font-weight: 800; }
+  .price-main .num { font-size: 36px; letter-spacing: -.5px; }
+  .price-main .unit { font-size: 22px; font-weight: 700; }
+
+  .field-label-lg { font-size: 15px; font-weight: 600; margin-bottom: 12px; }
+  .specs { display: flex; flex-wrap: wrap; gap: 10px; }
+  .spec {
+    min-width: 132px; padding: 10px 18px; border-radius: var(--radius);
+    background: var(--surface-2); border: 1.5px solid transparent;
+    text-align: center; transition: all .15s;
+  }
+  .spec:hover { border-color: #c9d6f5; }
+  .spec.active { background: var(--primary-soft); border-color: var(--primary); }
+  .spec .s-name { font-size: 14px; font-weight: 600; }
+  .spec .s-stock { font-size: 12px; margin-top: 4px; color: var(--green); }
+  .spec .s-stock.out { color: var(--red); }
+  .spec.disabled { opacity: .6; cursor: not-allowed; }
+  .spec.disabled .s-name { color: var(--text-3); }
+
+  .desc-text { font-size: 14px; color: var(--text-2); line-height: 1.75; }
+
+  .qty-row { display: flex; align-items: center; }
+  .qty {
+    display: inline-flex; align-items: center; border: 1px solid var(--border-strong);
+    border-radius: var(--radius); overflow: hidden; background: var(--surface);
+  }
+  .qty button {
+    width: 40px; height: 40px; display: grid; place-items: center;
+    color: var(--text-2); font-size: 18px; transition: background .15s, color .15s;
+  }
+  .qty button:hover:not(:disabled) { background: var(--surface-2); color: var(--primary); }
+  .qty button:disabled { opacity: .35; cursor: not-allowed; }
+  .qty input { width: 58px; height: 40px; border: none; outline: none; text-align: center; font-size: 15px; font-weight: 600; color: var(--text); background: none; }
+  .qty-tip { margin-left: 14px; font-size: 13px; color: var(--text-3); }
+
+  .actions { display: flex; gap: 12px; }
+
+  .section { margin-top: 18px; padding: 24px 28px 28px; }
+  .rich { font-size: 14px; color: var(--text-2); line-height: 1.9; }
+  .rich h4 { margin: 0 0 8px; font-size: 14.5px; color: var(--text); }
+  .rich ul { margin: 0 0 16px; padding-left: 20px; }
+  .rich li { margin-bottom: 6px; }
+  .rich p { margin: 0 0 14px; }
+
+  .back-link {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 34px 0 10px; color: var(--text-2); font-size: 14px;
+  }
+  .back-link:hover { color: var(--primary); }
+  .back-link svg { width: 16px; height: 16px; }
+
+  /* 会员价 / 互动 */
+  .member-price { margin-top: 10px; font-size: 13.5px; color: var(--text-2); }
+  .member-price b { font-size: 18px; font-weight: 800; }
+  .interact-bar { display: flex; align-items: center; gap: 16px; margin-bottom: 6px; }
+  .ilike {
+    display: inline-flex; align-items: center; gap: 7px; padding: 8px 16px; border-radius: 999px;
+    background: var(--surface-2); color: var(--text-2); font-size: 13.5px; font-weight: 600;
+    transition: all .15s;
+  }
+  .ilike:hover { background: #ffeceb; color: var(--red); }
+  .ilike svg { width: 16px; height: 16px; }
+  .iview { display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; color: var(--text-3); }
+  .iview svg { width: 16px; height: 16px; }
+  .cmt-form { display: flex; gap: 10px; margin-top: 14px; }
+  .cmt-form .input { flex: 1; }
+  .cmt-list { display: flex; flex-direction: column; gap: 12px; }
+  .cmt {
+    display: flex; gap: 10px; padding: 12px 14px; border-radius: var(--radius);
+    background: var(--surface-2);
+  }
+  .cmt .c-avatar { width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; background: var(--primary-soft); color: var(--primary); display: grid; place-items: center; font-weight: 700; }
+  .cmt .c-body { flex: 1; min-width: 0; }
+  .cmt .c-name { font-size: 13px; font-weight: 600; color: var(--text); }
+  .cmt .c-time { font-size: 12px; color: var(--text-3); margin-left: 8px; }
+  .cmt .c-text { font-size: 13.5px; color: var(--text-2); line-height: 1.6; margin-top: 4px; word-break: break-word; }
+
+  html.mobile-layout {
+    .detail-grid { grid-template-columns: 1fr; }
+    .info-title { font-size: 24px; }
+    .wrap { padding: 16px 14px 0; }
+  }
+</style>
+</head>
+<body>
+
+<div id="header"></div>
+<div class="wrap" id="app"></div>
+<div id="footer"></div>
+<button class="to-top" id="toTop" title="回到顶部"></button>
+
+<script src="assets/base.js"></script>
+<script>
+/* =========================================================
+   商品详情数据（id 与 store.html 测试商品对应）
+   ========================================================= */
+const DETAILS = {
+  1:  { cat: '测试机器人', price: 11.00,  emoji: '🤖', color: 'linear-gradient(135deg,#3b82f6,#60a5fa)',
+        desc: '测试机器人入门版，适合先跑通流程。',
+        specs: [{ name: '默认规格', stock: 12 }],
+        rich: '<h4>包含内容</h4><ul><li>基础机器人主程序</li><li>语音调用接口示例</li><li>部署说明文档</li></ul><h4>交付说明</h4><p>付款后自动发放兑换码，凭码在管理后台自助激活，支持 7 天内重新发放一次。</p>' },
+  2:  { cat: '测试机器人', price: 22.00,  emoji: '🤖', color: 'linear-gradient(135deg,#6366f1,#818cf8)',
+        desc: '测试机器人标准版，功能更全。',
+        specs: [{ name: '默认规格', stock: 8 }],
+        rich: '<h4>包含内容</h4><ul><li>标准版机器人主程序</li><li>多群管理模块</li><li>可视化配置面板</li></ul><h4>交付说明</h4><p>下单后自动交付，附带一对一部署文档。</p>' },
+  3:  { cat: '测试机器人', price: 33.00,  emoji: '🧭', color: 'linear-gradient(135deg,#0ea5e9,#38bdf8)',
+        desc: '测试机器人进阶版，支持更多扩展。',
+        specs: [{ name: '默认规格', stock: 5 }, { name: '含源码', stock: 2 }],
+        rich: '<h4>包含内容</h4><ul><li>进阶版主程序</li><li>插件扩展框架</li><li>定时任务模块</li></ul><h4>交付说明</h4><p>含源码规格额外提供完整工程压缩包。</p>' },
+  4:  { cat: '测试机器人', price: 66.00,  emoji: '👑', color: 'linear-gradient(135deg,#8b5cf6,#a78bfa)',
+        desc: '测试机器人旗舰版，全功能解锁。',
+        specs: [{ name: '默认规格', stock: 3 }, { name: '含源码', stock: 1 }],
+        rich: '<h4>包含内容</h4><ul><li>旗舰版全部模块</li><li>多语言支持</li><li>优先技术支持</li></ul><h4>交付说明</h4><p>高价值商品，下单后 1 个工作日内人工确认交付。</p>' },
+  5:  { cat: '测试插件', price: 9.90,   emoji: '🔌', color: 'linear-gradient(135deg,#f59e0b,#fbbf24)',
+        desc: '自动发货插件，付款后即刻到账。',
+        specs: [{ name: '默认规格', stock: 30 }],
+        rich: '<h4>功能说明</h4><ul><li>订单自动识别</li><li>卡密库存自动扣减</li><li>异常订单告警</li></ul>' },
+  6:  { cat: '测试插件', price: 18.80,  emoji: '🔄', color: 'linear-gradient(135deg,#14b8a6,#2dd4bf)',
+        desc: '数据同步插件，示例为缺货状态。',
+        specs: [{ name: '默认规格', stock: 0 }],
+        rich: '<h4>功能说明</h4><ul><li>多平台数据同步</li><li>增量更新</li><li>失败重试</li></ul><p>当前该商品处于缺货状态，用于演示缺货提示效果。</p>' },
+  7:  { cat: '测试资源', price: 5.00,   emoji: '📦', color: 'linear-gradient(135deg,#ec4899,#f472b6)',
+        desc: '测试素材包，网盘链接交付。',
+        specs: [{ name: '默认规格', stock: 99 }],
+        rich: '<h4>包含内容</h4><ul><li>常用图标素材 500+</li><li>可商用授权说明</li></ul>' },
+  8:  { cat: '测试资源', price: 12.50,  emoji: '🎨', color: 'linear-gradient(135deg,#ef4444,#f87171)',
+        desc: '测试模板合集，长期更新。',
+        specs: [{ name: '默认规格', stock: 42 }],
+        rich: '<h4>包含内容</h4><ul><li>页面模板 20 套</li><li>配套组件样式</li><li>一年内免费更新</li></ul>' },
+  9:  { cat: '测试服务', price: 99.00,  emoji: '🛠️', color: 'linear-gradient(135deg,#0f172a,#334155)',
+        desc: '一对一远程部署服务，需提前预约。',
+        specs: [{ name: '标准服务', stock: 6 }, { name: '含运维 1 个月', stock: 3 }],
+        rich: '<h4>服务内容</h4><ul><li>远程协助环境配置</li><li>部署上线并验收</li><li>操作培训 30 分钟</li></ul><h4>温馨提示</h4><p>服务类商品需与客服确认时间后再下单。</p>' },
+  10: { cat: '测试服务', price: 199.00, emoji: '💎', color: 'linear-gradient(135deg,#059669,#34d399)',
+        desc: '定制开发服务，按需求评估工时。',
+        specs: [{ name: '需求评估', stock: 4 }],
+        rich: '<h4>服务内容</h4><ul><li>需求梳理与方案设计</li><li>开发与联调</li><li>上线后 2 周维护</li></ul>' },
+};
+
+const NAME_MAP = {
+  1: '测试机器人 · 入门版', 2: '测试机器人 · 标准版', 3: '测试机器人 · 进阶版', 4: '测试机器人 · 旗舰版',
+  5: '测试插件 · 自动发货', 6: '测试插件 · 数据同步',
+  7: '测试资源 · 素材包', 8: '测试资源 · 模板合集',
+  9: '测试服务 · 一对一部署', 10: '测试服务 · 定制开发',
+};
+
+const ICONS = {
+  user:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 20v-1.5a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4V20"/><circle cx="9.5" cy="7.5" r="3.5"/></svg>',
+  truck: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h11v10H3z"/><path d="M14 11h4l3 3v3h-7z"/><circle cx="7" cy="18" r="1.4"/><circle cx="17.5" cy="18" r="1.4"/></svg>',
+  ban:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="m6 18 12-12"/></svg>',
+  warn:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5M12 16.5h.01"/></svg>',
+  ok:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="m8 12.5 2.7 2.7L16 9.5"/></svg>',
+  left:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m15 5-7 7 7 7"/></svg>',
+  heart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 20s-7-4.4-7-9.4A4 4 0 0 1 12 8a4 4 0 0 1 7 2.6C19 15.6 12 20 12 20z"/></svg>',
+  eye:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.8"/></svg>',
+};
+
+/* 当前会员（仅用于展示会员价；实际折扣由服务端在下单时计算） */
+const ME = XJ.user();
+const ME_L = XJ.levelInfo((ME && ME.uid) ? (ME.level || '') : '');
+const ME_HAS_DISC = ME_L.rate < 1;
+
+const params = new URLSearchParams(location.search);
+const pid = Number(params.get('id')) || 1;
+const detail = DETAILS[pid] || DETAILS[1];
+let title = NAME_MAP[pid] || '测试商品';
+function prodTitle() { return XJ.loc(detail, 'title') || title; }
+document.title = prodTitle() + ' · ' + XJ.tr('XJ Store');
+
+let CAT_NAME = { bot: '测试机器人', plugin: '测试插件', resource: '测试资源', service: '商品服务' };
+
+/* 分类名以后台维护的为准；返回 Promise 供详情加载前 await，避免用旧映射 */
+const CAT_READY = (async function loadCatNames() {
+  if (typeof fetch !== 'function') return;
+  try {
+    const r = await fetch('/api/categories');
+    if (!r.ok) return;
+    const j = await r.json();
+    if (j.ok && Array.isArray(j.list) && j.list.length) {
+      const m = {};
+      j.list.forEach(c => { if (c && c.id) m[c.id] = c.name; });
+      CAT_NAME = Object.assign({}, CAT_NAME, m);
+    }
+  } catch (e) { /* 保留内置映射 */ }
+})();
+
+const minBuy = 1;
+let selectedSpec = 0;
+let qty = 1;
+const app = document.getElementById('app');
+
+/* ---------- 收藏状态（服务端为准，按账户存储） ---------- */
+let FAVED = false;
+function heartIcon(filled) {
+  return `<svg viewBox="0 0 24 24" fill="${filled ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.9" style="width:16px;height:16px"><path d="M12 20s-7-4.4-7-9.4A4 4 0 0 1 12 8a4 4 0 0 1 7 2.6C19 15.6 12 20 12 20z"/></svg>`;
+}
+async function loadFavState() {
+  const me = XJ.user();
+  if (!me || !me.uid || typeof fetch !== 'function') return;
+  try {
+    const r = await fetch('/api/account/favorites?uid=' + encodeURIComponent(me.uid) + '&token=' + encodeURIComponent(me.token || ''));
+    if (!r.ok) return;
+    const j = await r.json();
+    if (j.ok) FAVED = (j.list || []).some(p => String(p.id) === String(pid));
+  } catch (e) { /* 取不到按未收藏处理 */ }
+}
+
+function currentStock() { return detail.specs[selectedSpec].stock; }
+
+/* 规格价：规格自带 price 优先，没有则回退商品统一价（向后兼容旧数据） */
+function specPrice(s) {
+  const base = Number(detail.price) || 0;
+  if (!s || s.price === undefined || s.price === null || s.price === '') return base;
+  const v = Number(s.price);
+  return isNaN(v) ? base : v;
+}
+function currentSpec() { return detail.specs[selectedSpec] || detail.specs[0] || {}; }
+function currentPrice() { return specPrice(currentSpec()); }
+
+function render() {
+  const offShelf = !!(detail && detail.status === 'off');
+  const stock = currentStock();
+  const outOfStock = stock < minBuy;
+  qty = Math.min(Math.max(qty, minBuy), Math.max(stock, minBuy));
+
+  const specsHTML = detail.specs.map((s, i) => {
+    const out = s.stock < 1;
+    return `<button class="spec ${i === selectedSpec ? 'active' : ''} ${out ? 'disabled' : ''}" data-spec="${i}">
+        <div class="s-name">${XJ.tr(s.name)}</div>
+        <div class="s-price" style="font-size:13px;font-weight:700;color:var(--primary);margin:2px 0">¥${specPrice(s).toFixed(2)}</div>
+        <div class="s-stock ${out ? 'out' : ''}">${out ? XJ.tr('已售罄') : XJ.tr('库存 ') + s.stock}</div>
+      </button>`;
+  }).join('');
+
+  const alertHTML = outOfStock
+    ? `<div class="alert danger">${ICONS.warn}<span>${XJ.tr('当前库存不足以满足该商品的最小购买数量（')}${minBuy}${XJ.tr(' 件）')}</span></div>`
+    : `<div class="alert ok">${ICONS.ok}<span>${XJ.tr('库存充足，当前规格可下单 ')}${stock}${XJ.tr(' 件')}</span></div>`;
+
+  // 有商品图片时优先显示图片，否则回退 emoji
+  const thumbInner = detail.image
+    ? `<img src="${detail.image}" alt="" style="width:100%;height:100%;object-fit:cover" />`
+    : detail.emoji;
+
+  app.innerHTML = `
+    <div class="breadcrumb">
+      <a href="store.html">${XJ.tr('商店')}</a><span class="sep">/</span>
+      <a href="store.html">${XJ.tr('商品中心')}</a><span class="sep">/</span>
+      <span class="cur">${XJ.tr(detail.cat)}</span>
+    </div>
+
+    <div class="detail-grid">
+      <div class="card gallery anim-zoom">
+        <div class="gallery-main" style="background:${detail.color}">
+          ${detail.image ? `<img src="${detail.image}" alt="" style="width:100%;height:100%;object-fit:cover" />` : `<div class="gallery-emoji">${detail.emoji}</div>`}
+        </div>
+        <div class="thumbs">
+          <div class="thumb-mini active" style="background:${detail.color}">${thumbInner}</div>
+          <div class="thumb-mini" style="background:${detail.color};filter:brightness(.72) saturate(.8)">${thumbInner}</div>
+          <div class="thumb-mini" style="background:${detail.color};filter:brightness(1.25) saturate(.85)">${thumbInner}</div>
+        </div>
+      </div>
+
+      <div class="card info anim-up d2">
+        <div class="info-cat">${XJ.tr('分类：')}<b>${XJ.tr(detail.cat)}</b></div>
+        <h1 class="info-title">${prodTitle()}</h1>
+        <div class="info-tags">
+          <span class="tag orange">${ICONS.user}${XJ.tr('游客可购')}</span>
+          <span class="tag blue">${ICONS.truck}${XJ.tr('自由交付')}</span>
+          <span class="tag red">${ICONS.ban}${XJ.tr('限购')}</span>
+        </div>
+
+        <div class="price-label">${XJ.tr('价格')}${detail.specs.length > 1 ? XJ.tr('（按规格）') : ''}</div>
+        <div class="price-main"><span class="num">${currentPrice().toFixed(2)}</span><span class="unit">CNY</span></div>
+        ${ME_HAS_DISC ? `<div class="member-price">${XJ.tr('您的')}${ME_L.name}${XJ.tr('价')} <b style="color:${ME_L.color}">${(currentPrice() * ME_L.rate).toFixed(2)}</b> CNY（${ME_L.zhe}${XJ.tr('折')}）</div>` : ''}
+
+        <div class="hr"></div>
+
+        <div class="field">
+          <div class="field-label-lg">选择规格</div>
+          <div class="specs">${specsHTML}</div>
+        </div>
+
+        <div class="field">
+          <div class="field-label-lg">${XJ.tr('商品描述')}</div>
+          <div class="desc-text">${XJ.loc(detail, 'desc')}</div>
+        </div>
+
+        <div class="field">
+          <div class="field-label-lg">${XJ.tr('购买数量')}</div>
+          <div class="qty-row">
+            <div class="qty">
+              <button id="qMinus" ${qty <= minBuy ? 'disabled' : ''}>−</button>
+              <input id="qInput" type="text" value="${qty}" inputmode="numeric" />
+              <button id="qPlus" ${qty >= stock ? 'disabled' : ''}>+</button>
+            </div>
+            <div class="qty-tip">${outOfStock ? XJ.tr('暂无可售库存') : XJ.tr('最多可购 ') + stock + XJ.tr(' 件')}</div>
+          </div>
+        </div>
+
+        ${alertHTML}
+        ${offShelf ? `<div class="alert danger">${ICONS.ban}<span>${XJ.tr('该商品已下架，暂时无法购买')}</span></div>` : ''}
+
+        <div class="actions">
+          <button class="btn btn-primary" id="buyNow" ${outOfStock || offShelf ? 'disabled' : ''}>${XJ.tr('立即购买')}</button>
+          <button class="btn btn-ghost" id="addCart" ${outOfStock || offShelf ? 'disabled' : ''}>${XJ.tr('加入购物车')}</button>
+          <button class="btn btn-ghost" id="favBtn" style="flex:0 0 auto;${FAVED ? 'color:var(--red);border-color:var(--red);' : ''}" title="${XJ.tr('收藏该商品')}">${heartIcon(FAVED)}<span style="margin-left:5px">${FAVED ? XJ.tr('已收藏') : XJ.tr('收藏')}</span></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card section anim-up d4">
+      <div class="section-title">${XJ.tr('详细信息')}</div>
+      <div class="rich">${XJ.loc(detail, 'rich')}</div>
+    </div>
+
+    <div class="card section anim-up d5">
+      <div class="section-title">${XJ.tr('商品互动')}</div>
+      <div class="interact-bar">
+        <button class="ilike" id="likeBtn">${ICONS.heart}<span id="likeCount">0</span> ${XJ.tr('点赞')}</button>
+        <span class="iview">${ICONS.eye}<span id="viewCount">0</span> ${XJ.tr('浏览')}</span>
+      </div>
+      <div class="hr"></div>
+      <div class="field-label-lg">${XJ.tr('评论')}（<span id="cmtCount">0</span>）</div>
+      <div class="cmt-list" id="cmtList"></div>
+      <div class="cmt-form">
+        <input class="input" id="cmtInput" placeholder="${XJ.tr('说点什么吧…（登录后将以会员名发布）')}" maxlength="200" />
+        <button class="btn btn-primary btn-sm" id="cmtSend">${XJ.tr('发送')}</button>
+      </div>
+    </div>
+
+    <a class="back-link" href="store.html">${ICONS.left} ${XJ.tr('返回商品列表')}</a>
+  `;
+
+  bindEvents();
+}
+
+function bindEvents() {
+  document.querySelectorAll('.spec').forEach(el => {
+    el.addEventListener('click', () => {
+      const i = Number(el.dataset.spec);
+      if (detail.specs[i].stock < 1) return;
+      selectedSpec = i; qty = 1; render();
+    });
+  });
+
+  const input = document.getElementById('qInput');
+  const minus = document.getElementById('qMinus');
+  const plus = document.getElementById('qPlus');
+  if (minus) minus.addEventListener('click', () => { qty = Math.max(minBuy, qty - 1); render(); });
+  if (plus) plus.addEventListener('click', () => { qty = Math.min(currentStock(), qty + 1); render(); });
+  if (input) input.addEventListener('change', () => {
+    const v = parseInt(input.value.replace(/\D/g, ''), 10);
+    qty = isNaN(v) ? minBuy : Math.min(Math.max(v, minBuy), currentStock());
+    render();
+  });
+
+  document.getElementById('addCart').addEventListener('click', () => {
+    if (detail.status === 'off') { XJ.toast(XJ.tr('该商品已下架，无法购买')); return; }
+    const spec = detail.specs[selectedSpec].name;
+    XJ.cart.add({ id: pid, title: XJ.loc(detail, 'title'), price: currentPrice(), emoji: detail.emoji, color: detail.color, spec: spec, qty: qty });
+    XJ.toast(XJ.tr('已加入购物车：') + qty + XJ.tr(' 件'));
+  });
+
+  const favBtn = document.getElementById('favBtn');
+  if (favBtn) favBtn.addEventListener('click', async () => {
+    const me = XJ.user();
+    if (!me || !me.uid) {
+      XJ.toast(XJ.tr('请先登录再收藏'));
+      location.href = 'login.html?back=' + encodeURIComponent('commodity.html?id=' + pid);
+      return;
+    }
+    try {
+      const r = await fetch('/api/account/favorite', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uid: me.uid, token: me.token || '', id: pid }),
+      });
+      const j = await r.json();
+      if (j.ok) { FAVED = j.added; XJ.toast(j.added ? XJ.tr('已加入收藏') : XJ.tr('已取消收藏')); render(); }
+      else XJ.toast(j.msg || XJ.tr('操作失败，请确认服务已启动'));
+    } catch (e) { XJ.toast(XJ.tr('操作失败，请确认服务已启动')); }
+  });
+
+  document.getElementById('buyNow').addEventListener('click', () => {
+    if (detail.status === 'off') { XJ.toast(XJ.tr('该商品已下架，无法购买')); return; }
+    const spec = detail.specs[selectedSpec].name;
+    XJ.cart.add({ id: pid, title: prodTitle(), price: currentPrice(), emoji: detail.emoji, color: detail.color, spec: spec, qty: qty });
+    location.href = 'cart.html';
+  });
+
+  bindInteractions();
+}
+
+/* ---------- 商品互动 ---------- */
+function bindInteractions() {
+  const likeBtn = document.getElementById('likeBtn');
+  const cmtSend = document.getElementById('cmtSend');
+  if (likeBtn) likeBtn.addEventListener('click', async () => {
+    try {
+      const r = await fetch('/api/interactions/like', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: pid }) });
+      const j = await r.json();
+      if (j.ok) document.getElementById('likeCount').textContent = j.item.likes;
+      XJ.toast(XJ.tr('感谢点赞'));
+    } catch (e) {}
+  });
+  if (cmtSend) cmtSend.addEventListener('click', async () => {
+    const inp = document.getElementById('cmtInput');
+    const text = inp.value.trim();
+    if (!text) { XJ.toast(XJ.tr('评论内容不能为空')); return; }
+    try {
+      const r = await fetch('/api/interactions/comment', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: pid, name: (ME && ME.name) || '匿名', text }) });
+      const j = await r.json();
+      if (j.ok) { inp.value = ''; renderComments(j.item.comments); }
+    } catch (e) { XJ.toast(XJ.tr('评论失败，请确认服务已启动')); }
+  });
+}
+
+function renderComments(comments) {
+  comments = comments || [];
+  document.getElementById('cmtCount').textContent = comments.length;
+  const box = document.getElementById('cmtList');
+  box.innerHTML = comments.length ? comments.map(c => `
+    <div class="cmt">
+      <div class="c-avatar">${String(c.name || '匿').slice(0, 1).toUpperCase()}</div>
+      <div class="c-body">
+        <div><span class="c-name">${c.name}</span><span class="c-time">${c.time}</span></div>
+        <div class="c-text">${String(c.text).replace(/</g, '&lt;')}</div>
+      </div>
+    </div>`).join('') : `<div style="color:var(--text-3);font-size:13.5px;padding:8px 0">${XJ.tr('暂无评论，快来抢沙发')}</div>`;
+}
+
+async function loadInteractions() {
+  try {
+    const r = await fetch('/api/interactions');
+    const j = await r.json();
+    if (!j.ok) return;
+    const it = j.data[pid] || { likes: 0, views: 0, comments: [] };
+    const lc = document.getElementById('likeCount'); if (lc) lc.textContent = it.likes || 0;
+    const vc = document.getElementById('viewCount'); if (vc) vc.textContent = it.views || 0;
+    renderComments(it.comments);
+    // 触发一次浏览量自增（仅当按钮已渲染）
+    if (document.getElementById('likeBtn')) {
+      fetch('/api/interactions/view', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: pid }) })
+        .then(r2 => r2.json()).then(j2 => { if (j2.ok && document.getElementById('viewCount')) document.getElementById('viewCount').textContent = j2.item.views; })
+        .catch(() => {});
+    }
+  } catch (e) {}
+}
+
+render();
+loadInteractions();
+
+/* 优先用服务端商品数据（管理后台可维护），取不到则回退到内置数据 */
+(async function loadRemoteDetail() {
+  if (typeof fetch !== 'function') return;
+  try {
+    await CAT_READY; // 等分类名就绪，避免详情页分类显示成旧名/英文标识
+    const r = await fetch('/api/products');
+    if (!r.ok) return;
+    const j = await r.json();
+    if (!j.ok || !Array.isArray(j.list)) return;
+    const p = j.list.find(x => x.id === pid);
+    // 服务端是数据源：商品被后台删掉后，不再回退到内置数据
+    if (!p) {
+      document.getElementById('app').innerHTML = `
+        <div class="card anim-in" style="padding:80px 20px;text-align:center;color:var(--text-3)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" style="width:46px;height:46px;opacity:.5;margin-bottom:14px"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>
+          <div style="font-size:15px;color:var(--text-2);margin-bottom:8px">${XJ.tr('商品不存在或已下架')}</div>
+          <div style="font-size:13px">${XJ.tr('该商品可能已被管理员删除')}</div>
+          <div style="margin-top:22px"><a class="btn btn-primary btn-sm" href="store.html">${XJ.tr('返回商品列表')}</a></div>
+        </div>`;
+      document.title = XJ.tr('商品不存在或已下架') + ' · ' + XJ.tr('XJ Store');
+      return;
+    }
+    title = p.title || title;
+    detail.i18n = p.i18n || null;
+    detail.cat = CAT_NAME[p.cat] || p.cat || detail.cat;
+    detail.status = p.status || '';
+    detail.image = p.image || '';
+    detail.price = Number(p.price) || detail.price;
+    detail.emoji = p.emoji || detail.emoji;
+    detail.color = p.color || detail.color;
+    detail.desc = p.desc || detail.desc;
+    detail.rich = p.rich || detail.rich;
+    if (Array.isArray(p.specs) && p.specs.length) { detail.specs = p.specs; selectedSpec = 0; }
+    document.title = prodTitle() + ' · ' + XJ.tr('XJ Store');
+    await loadFavState(); // 收藏状态以服务端为准，需在渲染前拿到
+    render();
+    loadInteractions();
+  } catch (e) { /* 保留内置数据 */ }
+})();
+
+XJ.guardBanned();
+XJ.init({ active: 'home' });
+
+/* 语言切换时重渲详情页（标题 + 正文重新走 XJ.loc / XJ.tr） */
+document.addEventListener('xj:langchange', () => {
+  document.title = prodTitle() + ' · ' + XJ.tr('XJ Store');
+  render();
+  loadInteractions();
+});
+</script>
+</body>
+</html>

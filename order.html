@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>订单查询 · XJ Store</title>
+<script src="assets/head.js"></script>
+<link rel="stylesheet" href="assets/base.css" />
+<style>
+  .wrap { width: 100%; max-width: min(var(--page-w), 100% - 32px); margin: 0 auto; padding: 22px 22px 0; }
+  .page-title { display: flex; align-items: center; gap: 9px; font-size: 22px; font-weight: 800; padding: 6px 2px 18px; }
+  .page-title::before { content: ""; width: 3px; height: 20px; border-radius: 2px; background: var(--primary); }
+
+  .query { padding: 24px 26px 26px; margin-bottom: 18px; }
+  .q-row { display: flex; gap: 12px; align-items: flex-start; }
+  .q-row .input { flex: 1; }
+  .seg { display: flex; gap: 4px; background: var(--surface-2); padding: 4px; border-radius: 999px; margin-bottom: 18px; width: fit-content; }
+  .seg button { padding: 6px 16px; border-radius: 999px; font-size: 13.5px; color: var(--text-2); transition: all .15s; }
+  .seg button.active { background: var(--surface); color: var(--primary); font-weight: 600; box-shadow: var(--shadow-card); }
+
+  .order { padding: 22px 26px 24px; margin-bottom: 16px; }
+  .o-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+  .o-no { font-size: 15px; font-weight: 700; }
+  .o-no span { color: var(--text-3); font-weight: 500; font-size: 13px; margin-left: 8px; }
+  .o-meta { display: flex; gap: 18px; flex-wrap: wrap; font-size: 13px; color: var(--text-3); margin: 14px 0 4px; }
+  .o-meta b { color: var(--text-2); font-weight: 600; }
+  .o-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; }
+  .o-item .thumb { width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; font-size: 18px; flex-shrink: 0; }
+  .o-item .n { flex: 1; min-width: 0; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .o-item .q { font-size: 12.5px; color: var(--text-3); }
+  .o-item .p { font-size: 13.5px; font-weight: 600; }
+  .o-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 14px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .o-total { font-size: 14px; color: var(--text-2); }
+  .o-total b { font-size: 20px; color: var(--primary); font-weight: 800; margin-left: 6px; }
+
+  .cards { margin-top: 14px; padding: 14px 16px; background: var(--surface-2); border-radius: var(--radius); }
+  .cards .ct { font-size: 12.5px; color: var(--text-2); font-weight: 600; margin-bottom: 8px; }
+  .card-line {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    font-family: ui-monospace, Consolas, monospace; font-size: 13px;
+    padding: 8px 0; border-bottom: 1px dashed var(--border);
+  }
+  .card-line:last-child { border-bottom: none; }
+  .copy { font-size: 12px; color: var(--primary); flex-shrink: 0; }
+
+  html.mobile-layout { .wrap { padding: 16px 14px 0; } .q-row { flex-direction: column; } }
+</style>
+</head>
+<body>
+
+<div id="header"></div>
+
+<div class="wrap">
+  <div class="page-title">订单查询</div>
+
+  <div class="card query anim-up">
+    <div class="seg" id="seg">
+      <button class="active" data-mode="no">按订单号</button>
+      <button data-mode="mail">按联系方式</button>
+    </div>
+    <div class="q-row">
+      <input class="input" id="keyword" placeholder="请输入订单号，例如 XJ1234567890" />
+      <button class="btn btn-primary" id="searchBtn" style="flex:0 0 110px">查询</button>
+    </div>
+  </div>
+
+  <div id="result"></div>
+</div>
+
+<div id="footer"></div>
+<button class="to-top" id="toTop" title="回到顶部"></button>
+
+<script src="assets/base.js"></script>
+<script>
+const STATUS = {
+  paid:      { text: '已完成', cls: 'green' },
+  pending:   { text: '待支付', cls: 'orange' },
+  delivering:{ text: '交付中', cls: 'blue' },
+  refunded:  { text: '已退款', cls: 'red' },
+};
+
+const CONTACT_LABEL = { qq: 'QQ', wechat: '微信', mail: '邮箱', phone: '手机' };
+
+let mode = 'no';
+const resultEl = document.getElementById('result');
+
+document.getElementById('seg').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-mode]');
+  if (!btn) return;
+  mode = btn.dataset.mode;
+  document.querySelectorAll('#seg button').forEach(b => b.classList.toggle('active', b === btn));
+  document.getElementById('keyword').placeholder = mode === 'no'
+    ? '请输入订单号，例如 XJ1234567890'
+    : '请输入下单时填写的 QQ / 微信 / 邮箱 / 手机号';
+});
+
+function allOrders() {
+  try { return JSON.parse(localStorage.getItem('xj_orders') || '[]'); } catch (e) { return []; }
+}
+
+function orderHTML(o, i) {
+  const st = STATUS[o.status] || STATUS.paid;
+  return `
+    <div class="card order anim-up d${Math.min(i + 1, 6)}">
+      <div class="o-head">
+        <div class="o-no">${o.no}<span>${o.time}</span></div>
+        <span class="tag ${st.cls}">${st.text}</span>
+      </div>
+      <div class="o-meta">
+        <span>联系方式：<b>${CONTACT_LABEL[o.contactType] || ''} ${o.email || ''}</b></span>
+        <span>支付方式：<b>${o.pay}</b></span>
+        ${o.note ? `<span>备注：<b>${o.note}</b></span>` : ''}
+      </div>
+      ${o.items.map(it => `
+        <div class="o-item">
+          <span class="thumb" style="background:${it.color}">${it.emoji}</span>
+          <span class="n">${it.title}（${it.spec}）</span>
+          <span class="q">×${it.qty}</span>
+          <span class="p">${(it.price * it.qty).toFixed(2)}</span>
+        </div>`).join('')}
+      ${o.cards && o.cards.length ? `
+        <div class="cards">
+          <div class="ct">交付内容</div>
+          ${o.cards.map(c => `<div class="card-line"><span>${c}</span><a class="copy" href="#">复制</a></div>`).join('')}
+        </div>` : ''}
+      <div class="o-foot">
+        <div class="o-total">实付合计<b>${o.total.toFixed(2)} CNY</b></div>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-outline btn-sm" data-again="${o.no}">再来一单</button>
+          <a class="btn btn-ghost btn-sm" href="store.html">继续购物</a>
+        </div>
+      </div>
+    </div>`;
+}
+
+function render(list, tip) {
+  if (!list.length) {
+    resultEl.innerHTML = `<div class="card anim-in" style="padding:60px 20px;text-align:center;color:var(--text-3)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" style="width:44px;height:44px;opacity:.5;margin-bottom:12px"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>
+      <div>${tip || '没有查询到相关订单'}</div>
+    </div>`;
+    return;
+  }
+  resultEl.innerHTML = list.map(orderHTML).join('');
+}
+
+document.getElementById('searchBtn').addEventListener('click', () => {
+  const kw = document.getElementById('keyword').value.trim();
+  const orders = allOrders();
+  if (!kw) { render(orders, '请输入查询条件'); return; }
+  const hit = mode === 'no'
+    ? orders.filter(o => o.no.toLowerCase().includes(kw.toLowerCase()))
+    : orders.filter(o => (o.email || '').toLowerCase().includes(kw.toLowerCase()));
+  render(hit);
+});
+
+resultEl.addEventListener('click', e => {
+  const copy = e.target.closest('.copy');
+  if (copy) {
+    e.preventDefault();
+    navigator.clipboard?.writeText(copy.previousElementSibling.textContent);
+    XJ.toast('已复制到剪贴板');
+    return;
+  }
+  const again = e.target.closest('[data-again]');
+  if (again) {
+    const o = allOrders().find(x => x.no === again.dataset.again);
+    o.items.forEach(it => XJ.cart.add(it));
+    XJ.toast('已重新加入购物车');
+    setTimeout(() => location.href = 'cart.html', 700);
+  }
+});
+
+/* 与服务端同步状态：支付回调完成后自动变为「已完成」 */
+function syncFromServer(cb) {
+  if (typeof fetch !== 'function') return;
+  fetch('/api/order')
+    .then(r => (r.ok ? r.json() : null))
+    .then(data => {
+      if (!data || !data.ok || !Array.isArray(data.list)) return;
+      const local = allOrders();
+      let changed = false;
+      data.list.forEach(s => {
+        const hit = local.find(o => o.no === s.no);
+        if (!hit) return;
+        if (s.status && s.status !== hit.status) {
+          hit.status = s.status;
+          hit.pay = s.pay || hit.pay;
+          hit.tradeNo = s.tradeNo || '';
+          changed = true;
+        }
+        // 同步服务端权威卡密（整单 1 张真实码），覆盖本地草稿多张假码
+        if (Array.isArray(s.cards) && s.cards.length) { hit.cards = s.cards; changed = true; }
+      });
+      if (changed) { localStorage.setItem('xj_orders', JSON.stringify(local)); cb && cb(); }
+    })
+    .catch(() => {});
+}
+
+/* 带订单号进入时直接展示，否则展示本地最近订单 */
+function show() {
+  const no = new URLSearchParams(location.search).get('no');
+  if (no) render(allOrders().filter(o => o.no === no), '未找到该订单');
+  else render(allOrders(), '还没有任何订单，先去商店逛逛吧');
+}
+
+show();
+syncFromServer(show);
+
+XJ.guardBanned();
+XJ.init({ active: 'home' });
+</script>
+</body>
+</html>
