@@ -1,0 +1,32 @@
+[
+  {
+    "id": "Yunheng",
+    "name": "云珩公会",
+    "icon": "bot"
+  },
+  {
+    "id": "command",
+    "name": "指令代做",
+    "icon": "plug"
+  },
+  {
+    "id": "Xuanchuan",
+    "name": "服务器宣传",
+    "icon": "book"
+  },
+  {
+    "id": "service",
+    "name": "商品服务",
+    "icon": "spark"
+  },
+  {
+    "id": "ceshi",
+    "name": "测试分类",
+    "icon": "grid"
+  },
+  {
+    "id": "Gensui",
+    "name": "同行车（幻想）",
+    "icon": "bot"
+  }
+]

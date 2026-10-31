@@ -1,0 +1,477 @@
+[
+  {
+    "id": 1,
+    "cat": "ceshi",
+    "title": "测试",
+    "sub": "",
+    "tags": [
+      [
+        "测试商品",
+        "orange"
+      ],
+      [
+        "自由交付",
+        "blue"
+      ]
+    ],
+    "price": 1,
+    "emoji": "📦",
+    "color": "linear-gradient(135deg,#3b82f6,#60a5fa)",
+    "specs": [
+      {
+        "name": "默认规格",
+        "stock": 2
+      }
+    ],
+    "desc": "测试商品",
+    "rich": "",
+    "i18n": {
+      "en": {
+        "title": "Test",
+        "sub": "",
+        "desc": "Test product",
+        "rich": ""
+      },
+      "ja": {
+        "title": "テスト",
+        "sub": "",
+        "desc": "テスト商品",
+        "rich": ""
+      }
+    }
+  },
+  {
+    "id": 2,
+    "cat": "Xuanchuan",
+    "title": "服务器宣传",
+    "sub": "代号 XUANCHUAN",
+    "tags": [
+      [
+        "服务器宣传",
+        "orange"
+      ]
+    ],
+    "price": 15,
+    "emoji": "📣",
+    "color": "linear-gradient(135deg,#3b82f6,#60a5fa)",
+    "specs": [
+      {
+        "name": "30秒",
+        "price": 15,
+        "stock": 12
+      },
+      {
+        "name": "1分钟",
+        "price": 45,
+        "stock": 5
+      }
+    ],
+    "desc": "服务器宣传推广服务，提升你的服务器曝光与口碑。",
+    "rich": "<h4>服务内容</h4><ul><li>服务器亮点文案策划</li><li>多平台宣传投放</li><li>宣传效果跟踪反馈</li></ul><h4>交付说明</h4><p>付款后由客服与你确认宣传需求，1 个工作日内启动。</p>",
+    "i18n": {
+      "en": {
+        "title": "Server Promotion",
+        "sub": "Code: XUANCHUAN",
+        "desc": "Server promotion service to boost your server's exposure and reputation.",
+        "rich": "<h4>Service</h4><ul><li>Highlight copywriting for your server</li><li>Multi-platform promotion</li><li>Campaign performance tracking & feedback</li></ul><h4>Delivery</h4><p>After payment, our support will confirm your promo needs and launch within 1 business day.</p>"
+      },
+      "ja": {
+        "title": "サーバー宣伝",
+        "sub": "コード：XUANCHUAN",
+        "desc": "サーバーの露出と評判を高める宣伝サービス。",
+        "rich": "<h4>サービス内容</h4><ul><li>サーバーの魅力を伝える文案制作</li><li>マルチプラットフォームでの宣伝配信</li><li>宣伝効果の追跡とフィードバック</li></ul><h4>納品について</h4><p>お支払い後、サポートが宣伝内容を確認し、1営業日以内に開始します。</p>"
+      }
+    }
+  },
+  {
+    "id": 3,
+    "cat": "Yunheng",
+    "title": "云珩公会管理",
+    "sub": "代号 YUNHENGHUIZHANG",
+    "tags": [
+      [
+        "公会管理",
+        "orange"
+      ]
+    ],
+    "price": 120,
+    "emoji": "🛡️",
+    "color": "linear-gradient(135deg,#8b5cf6,#a78bfa)",
+    "specs": [
+      {
+        "name": "1个月",
+        "stock": 10,
+        "price": 120
+      },
+      {
+        "name": "3个月",
+        "stock": 10,
+        "price": 300
+      },
+      {
+        "name": "永久",
+        "stock": 10,
+        "price": 800
+      }
+    ],
+    "desc": "云珩公会管理工具，一站式管理公会成员、活动与资源。",
+    "rich": "<h4>功能说明</h4><ul><li>成员入退群自动登记</li><li>活动报名与统计</li><li>公会资源统一分发</li></ul><h4>交付说明</h4><p>下单后发放管理后台账号与操作手册，长期技术支持。</p>",
+    "image": "assets/uploads/pmv80k9s5l3mf.jpg",
+    "i18n": {
+      "en": {
+        "title": "Yunheng Guild Management",
+        "sub": "Code: YUNHENGHUIZHANG",
+        "desc": "Yunheng guild management tool — manage members, events and resources in one place.",
+        "rich": "<h4>Features</h4><ul><li>Auto log member join/leave</li><li>Event sign-up & stats</li><li>Unified resource distribution</li></ul><h4>Delivery</h4><p>After ordering, we provide an admin account and manual, with long-term support.</p>"
+      },
+      "ja": {
+        "title": "雲珩ギルド管理",
+        "sub": "コード：YUNHENGHUIZHANG",
+        "desc": "雲珩ギルド管理ツール。メンバー・イベント・リソースを一元管理。",
+        "rich": "<h4>機能説明</h4><ul><li>メンバーの入退群を自動記録</li><li>イベント申込と集計</li><li>ギルドリソースの一元配布</li></ul><h4>納品について</h4><p>ご注文後、管理アカウントとマニュアルを発行し、長期間サポートします。</p>"
+      }
+    }
+  },
+  {
+    "id": 4,
+    "cat": "command",
+    "title": "20CB 指令 · 标准版",
+    "sub": "代号 CMD-20CB-IN",
+    "tags": [
+      [
+        "指令",
+        "orange"
+      ]
+    ],
+    "price": 50,
+    "emoji": "📦",
+    "color": "",
+    "specs": [
+      {
+        "name": "默认规格",
+        "stock": 10
+      }
+    ],
+    "desc": "指令功能项（标准版），当前库存为 0，补货后可购。价格为占位，请按需调整。",
+    "rich": "<h4>说明</h4><ul><li>本项为指令 / 功能类商品</li><li>当前库存为 0，暂不可下单</li><li>价格为占位价，请按实际定价修改</li></ul>",
+    "i18n": {
+      "en": {
+        "title": "20CB Command · Standard",
+        "sub": "Code: CMD-20CB-IN",
+        "desc": "Command feature (Standard). Currently out of stock; available after restock. Price is a placeholder — adjust as needed.",
+        "rich": "<h4>Notes</h4><ul><li>This is a command/feature item</li><li>Out of stock (0) — cannot order yet</li><li>Price is a placeholder — set the real price</li></ul>"
+      },
+      "ja": {
+        "title": "20CBコマンド・標準版",
+        "sub": "コード：CMD-20CB-IN",
+        "desc": "コマンド機能（標準版）。現在在庫切れ、補充後に購入可能。価格はプレースホルダーです。",
+        "rich": "<h4>説明</h4><ul><li>本項目はコマンド・機能系商品です</li><li>在庫0のため注文不可</li><li>価格はプレースホルダーです</li></ul>"
+      }
+    },
+    "image": "assets/uploads/pmvgjbkr1nqt3.gif"
+  },
+  {
+    "id": 5,
+    "cat": "command",
+    "title": "20CB 指令 · 增强版",
+    "sub": "代号 CMD-20CB-PLUS",
+    "tags": [
+      [
+        "指令",
+        "orange"
+      ]
+    ],
+    "price": 50,
+    "emoji": "📦",
+    "color": "",
+    "specs": [
+      {
+        "name": "默认规格",
+        "stock": 0
+      }
+    ],
+    "desc": "指令功能项（增强版），当前库存为 0，补货后可购。价格为占位，请按需调整。",
+    "rich": "<h4>说明</h4><ul><li>本项为指令 / 功能类商品</li><li>当前库存为 0，暂不可下单</li><li>价格为占位价，请按实际定价修改</li></ul>",
+    "i18n": {
+      "en": {
+        "title": "20CB Command · Enhanced",
+        "sub": "Code: CMD-20CB-PLUS",
+        "desc": "Command feature (Enhanced). Currently out of stock; available after restock. Price is a placeholder — adjust as needed.",
+        "rich": "<h4>Notes</h4><ul><li>This is a command/feature item</li><li>Out of stock (0) — cannot order yet</li><li>Price is a placeholder — set the real price</li></ul>"
+      },
+      "ja": {
+        "title": "20CBコマンド・拡張版",
+        "sub": "コード：CMD-20CB-PLUS",
+        "desc": "コマンド機能（拡張版）。現在在庫切れ、補充後に購入可能。価格はプレースホルダーです。",
+        "rich": "<h4>説明</h4><ul><li>本項目はコマンド・機能系商品です</li><li>在庫0のため注文不可</li><li>価格はプレースホルダーです</li></ul>"
+      }
+    },
+    "image": "assets/uploads/pmvgjg319df52.png"
+  },
+  {
+    "id": 6,
+    "cat": "service",
+    "title": "一键导入构建",
+    "sub": "代号 BUILD-IMPORT-ONCE",
+    "tags": [
+      [
+        "指令",
+        "orange"
+      ]
+    ],
+    "price": 50,
+    "emoji": "🛠️",
+    "color": "",
+    "specs": [
+      {
+        "name": "默认规格",
+        "stock": 0
+      }
+    ],
+    "desc": "一键导入构建功能项，当前库存为 0，补货后可购。价格为占位，请按需调整。",
+    "rich": "<h4>说明</h4><ul><li>本项为指令 / 功能类商品</li><li>当前库存为 0，暂不可下单</li><li>价格为占位价，请按实际定价修改</li></ul>",
+    "i18n": {
+      "en": {
+        "title": "One-click Import Build",
+        "sub": "Code: BUILD-IMPORT-ONCE",
+        "desc": "One-click import build feature. Currently out of stock; available after restock. Price is a placeholder — adjust as needed.",
+        "rich": "<h4>Notes</h4><ul><li>This is a command/feature item</li><li>Out of stock (0) — cannot order yet</li><li>Price is a placeholder — set the real price</li></ul>"
+      },
+      "ja": {
+        "title": "ワンクリック導入ビルド",
+        "sub": "コード：BUILD-IMPORT-ONCE",
+        "desc": "ワンクリック導入ビルド機能。現在在庫切れ、補充後に購入可能。価格はプレースホルダーです。",
+        "rich": "<h4>説明</h4><ul><li>本項目はコマンド・機能系商品です</li><li>在庫0のため注文不可</li><li>価格はプレースホルダーです</li></ul>"
+      }
+    },
+    "image": "assets/uploads/pmvjlotnuv9wv.jpg"
+  },
+  {
+    "id": 8,
+    "cat": "service",
+    "title": "初级代理",
+    "sub": "代号 LOW-AGENT-30",
+    "tags": [
+      [
+        "代理",
+        "blue"
+      ],
+      [
+        "已下架",
+        "red"
+      ]
+    ],
+    "price": 30,
+    "emoji": "🤝",
+    "color": "linear-gradient(135deg,#f59e0b,#fbbf24)",
+    "specs": [
+      {
+        "name": "默认规格",
+        "stock": 0
+      }
+    ],
+    "status": "off",
+    "desc": "初级代理项，已下架。价格为占位，请按需调整。",
+    "rich": "<h4>状态</h4><p>该商品已下架，暂不可购买。如需上架请调整商品状态。</p>",
+    "i18n": {
+      "en": {
+        "title": "Junior Agent",
+        "sub": "Code: LOW-AGENT-30",
+        "desc": "Junior agent item, off-shelf. Price is a placeholder — adjust as needed.",
+        "rich": "<h4>Status</h4><p>This item is off-shelf and cannot be purchased. Change its status to list it again.</p>"
+      },
+      "ja": {
+        "title": "初級エージェント",
+        "sub": "コード：LOW-AGENT-30",
+        "desc": "初級エージェント項目、販売停止中。価格はプレースホルダーです。",
+        "rich": "<h4>ステータス</h4><p>この商品は販売停止中で購入できません。再掲載するには状態を変更してください。</p>"
+      }
+    }
+  },
+  {
+    "id": 9,
+    "cat": "service",
+    "title": "中级代理",
+    "sub": "代号 MID-AGENT-100",
+    "tags": [
+      [
+        "代理",
+        "blue"
+      ],
+      [
+        "已下架",
+        "red"
+      ]
+    ],
+    "price": 100,
+    "emoji": "🧑‍💼",
+    "color": "linear-gradient(135deg,#f97316,#fb923c)",
+    "specs": [
+      {
+        "name": "默认规格",
+        "stock": 0
+      }
+    ],
+    "status": "off",
+    "desc": "中级代理项，已下架。价格为占位，请按需调整。",
+    "rich": "<h4>状态</h4><p>该商品已下架，暂不可购买。如需上架请调整商品状态。</p>",
+    "i18n": {
+      "en": {
+        "title": "Mid-level Agent",
+        "sub": "Code: MID-AGENT-100",
+        "desc": "Mid-level agent item, off-shelf. Price is a placeholder — adjust as needed.",
+        "rich": "<h4>Status</h4><p>This item is off-shelf and cannot be purchased. Change its status to list it again.</p>"
+      },
+      "ja": {
+        "title": "中級エージェント",
+        "sub": "コード：MID-AGENT-100",
+        "desc": "中級エージェント項目、販売停止中。価格はプレースホルダーです。",
+        "rich": "<h4>ステータス</h4><p>この商品は販売停止中で購入できません。再掲載するには状態を変更してください。</p>"
+      }
+    }
+  },
+  {
+    "id": 10,
+    "cat": "ceshi",
+    "title": "测试品",
+    "sub": "代号 NEW-TEST",
+    "tags": [
+      [
+        "测试品",
+        "orange"
+      ]
+    ],
+    "price": 0,
+    "emoji": "🧪",
+    "color": "linear-gradient(135deg,#10b981,#34d399)",
+    "specs": [
+      {
+        "name": "默认规格",
+        "stock": 10,
+        "price": 0
+      }
+    ],
+    "desc": "测试品，用于流程走通与极小额支付验证。",
+    "rich": "<h4>说明</h4><ul><li>极小额测试商品</li><li>用于验证下单 / 支付链路</li></ul>",
+    "i18n": {
+      "en": {
+        "title": "Test Item",
+        "sub": "Code: NEW-TEST",
+        "desc": "Test item for workflow and micro-payment verification.",
+        "rich": "<h4>Notes</h4><ul><li>Micro-amount test product</li><li>For verifying order/payment flow</li></ul>"
+      },
+      "ja": {
+        "title": "テスト品",
+        "sub": "コード：NEW-TEST",
+        "desc": "フロー確認と少額決済検証用のテスト品。",
+        "rich": "<h4>説明</h4><ul><li>极少額のテスト商品</li><li>注文・決済フローの検証用</li></ul>"
+      }
+    }
+  },
+  {
+    "id": 11,
+    "cat": "service",
+    "title": "商店须知",
+    "sub": "代号 JIESHAO",
+    "tags": [
+      [
+        "商店须知",
+        "orange"
+      ]
+    ],
+    "price": 9999.99,
+    "emoji": "📋",
+    "color": "",
+    "specs": [
+      {
+        "name": "默认规格",
+        "stock": 0
+      }
+    ],
+    "desc": "商店须知说明项，价格与库存为占位，请按需调整。",
+    "rich": "<h4>商店须知</h4><ul><li>下单前请确认规格与库存</li><li>虚拟 / 服务类商品请先与客服确认</li><li>本项价格与库存为占位，请按实际修改</li></ul>",
+    "i18n": {
+      "en": {
+        "title": "Store Notice",
+        "sub": "Code: JIESHAO",
+        "desc": "Store notice. Price and stock are placeholders — adjust as needed.",
+        "rich": "<h4>Store Notice</h4><ul><li>Confirm spec & stock before ordering</li><li>For virtual/service items, confirm with support first</li><li>Price & stock here are placeholders</li></ul>"
+      },
+      "ja": {
+        "title": "ショップ案内",
+        "sub": "コード：JIESHAO",
+        "desc": "ショップ案内。価格と在庫はプレースホルダーです。",
+        "rich": "<h4>ショップ案内</h4><ul><li>ご注文前に仕様と在庫をご確認ください</li><li>仮想・サービス系商品は先にサポートへご相談ください</li><li>本項目の価格・在庫はプレースホルダーです</li></ul>"
+      }
+    },
+    "image": "assets/uploads/pmvjln8cec2cs.jpg"
+  },
+  {
+    "id": 12,
+    "cat": "Gensui",
+    "title": "同行车10月25日（结束）",
+    "sub": "迪士尼",
+    "tags": [
+      [
+        "同行车",
+        "orange"
+      ],
+      [
+        "结束",
+        "blue"
+      ]
+    ],
+    "price": 0,
+    "image": "assets/uploads/pmvm63hjg8o1c.png",
+    "emoji": "📦",
+    "color": "linear-gradient(135deg,#3b82f6,#60a5fa)",
+    "specs": [
+      {
+        "name": "二等座",
+        "stock": 0,
+        "price": 650
+      },
+      {
+        "name": "一等座",
+        "stock": 0,
+        "price": 1000
+      },
+      {
+        "name": "商务座",
+        "stock": 0,
+        "price": 1700
+      }
+    ],
+    "desc": "迪士尼",
+    "rich": ""
+  },
+  {
+    "id": 13,
+    "cat": "Gensui",
+    "title": "同行车10月29日（结束）",
+    "sub": "english fun day",
+    "tags": [
+      [
+        "语音调用",
+        "orange"
+      ],
+      [
+        "自由交付",
+        "blue"
+      ]
+    ],
+    "price": 0,
+    "image": "assets/uploads/pmvrz3oxq5lgk.png",
+    "emoji": "📦",
+    "color": "linear-gradient(135deg,#3b82f6,#60a5fa)",
+    "specs": [
+      {
+        "name": "有座票",
+        "stock": 0,
+        "price": 230
+      }
+    ],
+    "desc": "english fun day",
+    "rich": "english fun day"
+  }
+]

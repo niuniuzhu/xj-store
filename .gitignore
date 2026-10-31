@@ -1,9 +1,13 @@
 server/keys/
 server/config.json
-server/data/
 .env
 
 # 本地运行产物
 server/*.log
 server/*.bak.*
 ab_out.txt
+
+# 数据库（实时 JSON 数据纳入版本管理，便于跨主机迁移）
+# 运行时自动生成的备份不入库
+server/data/*.bak
+server/data/*.bak.*

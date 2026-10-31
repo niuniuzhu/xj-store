@@ -1,0 +1,79 @@
+[
+  {
+    "code": "XJ-NEW10",
+    "name": "新人立减券",
+    "type": "amount",
+    "value": 10,
+    "minSpend": 50,
+    "level": "",
+    "total": 200,
+    "used": 36,
+    "expiresAt": "2026-12-31",
+    "active": true,
+    "createdAt": "2026-01-01"
+  },
+  {
+    "code": "XJ-VIP20",
+    "name": "VIP 专享券",
+    "type": "amount",
+    "value": 20,
+    "minSpend": 100,
+    "level": "vip",
+    "total": 100,
+    "used": 12,
+    "expiresAt": "2026-12-31",
+    "active": true,
+    "createdAt": "2026-02-01"
+  },
+  {
+    "code": "XJ-SVIP30",
+    "name": "SVIP 尊享券",
+    "type": "amount",
+    "value": 30,
+    "minSpend": 200,
+    "level": "svip",
+    "total": 100,
+    "used": 8,
+    "expiresAt": "2026-12-31",
+    "active": true,
+    "createdAt": "2026-02-01"
+  },
+  {
+    "code": "XJ-OFF85",
+    "name": "全场 8.5 折券",
+    "type": "rate",
+    "value": 0.85,
+    "minSpend": 0,
+    "level": "",
+    "total": 300,
+    "used": 120,
+    "expiresAt": "2026-11-30",
+    "active": true,
+    "createdAt": "2026-03-01"
+  },
+  {
+    "code": "XJ-EXP",
+    "name": "已过期测试券",
+    "type": "amount",
+    "value": 15,
+    "minSpend": 30,
+    "level": "",
+    "total": 50,
+    "used": 50,
+    "expiresAt": "2026-06-30",
+    "active": false,
+    "createdAt": "2026-01-15"
+  },
+  {
+    "code": "123456",
+    "name": "",
+    "type": "amount",
+    "value": 799,
+    "minSpend": 0,
+    "level": "",
+    "total": 100,
+    "used": 1,
+    "expiresAt": "2026-12-31",
+    "active": true
+  }
+]

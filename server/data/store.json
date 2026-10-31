@@ -1,0 +1,26 @@
+{
+  "name": "XJ Store",
+  "slogan": "数字商品与自动化服务的优选商店",
+  "desc": "XJ Store 支持会员折扣与多种支付方式。",
+  "contactMail": "3805506653@qq.com",
+  "contactQq": "3805506653",
+  "contactWechat": "McXingji666",
+  "contactPhone": "18664521514",
+  "footerText": "© 2026 XJ Store. 保留所有权利",
+  "announcement": "XJ AI已正式开放！但deep seek和Gemini仍无法使用，请使用GPT！",
+  "maintenance": false,
+  "maintenanceMsg": "服务出现严重问题，服务不稳定！",
+  "background": {
+    "enabled": true,
+    "url": "https://api.yppp.net/pc.php",
+    "opacity": 0.18
+  },
+  "popup": {
+    "enabled": true,
+    "version": "4.5.1",
+    "title": "XJ Store v4.5.1 更新公告",
+    "content": "XJ AI 新增图片与文档识别、对话重试、按钮动效与手机端切换；顶栏品牌标识焕新。点击查看完整更新内容。",
+    "link": "article.html?id=10",
+    "linkText": "查看完整更新内容"
+  }
+}
