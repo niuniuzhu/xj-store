@@ -10,6 +10,13 @@
   ⚠️ `-ArgumentList` 不会自动给带空格参数加引号，`D:\Projects\xj store` 会被拆成 `D:\Projects\xj` 导致 MODULE_NOT_FOUND，必须 `"`"$s`"` 整体转义。
   ⚠️ 某些会话 `-RedirectStandardOutput/-RedirectStandardError` 报「字典中已添加关键字 Path」致起不来，去掉这两个参数即可。
 
+## Git 与远端
+- 远端 **https://github.com/niuniuzhu/xj-store**，分支 `main`；提交身份 `星际Stellar <niuniuzhu@users.noreply.github.com>`（仓库级）。
+- `.gitignore`：`server/config.json`、`server/data/`、`server/keys/`、`.env`、以及 `server/*.log`、`server/*.bak.*`、`ab_out.txt`。
+- ⚠️ 本环境 **不要用 rebase**（`--root` 那次直接把 `.git` 弄没了）；要接历史就 `git checkout -b main FETCH_HEAD` 后重新 add/commit。
+- ⚠️ GCM（credential.helper=helper-selector/manager）在本机段错误，浏览器 OAuth 不可用；已把本仓库 `credential.helper` 设为 **wincred**，凭据已存在 Windows 凭据管理器，push 直接可用。
+- 沙箱内 `git fetch` 偶发写不进 `refs/remotes/origin/*`（status 显示 `[gone]`）→ 显式 `git fetch origin "+refs/heads/main:refs/remotes/origin/main"`。
+
 ## 常驻自启（已生效）
 - 启动文件夹 `XJ Store Server.vbs`：登录时探测 8080，未起则静默拉起；由它起的实例**不依附会话**，跨天存活。睡眠唤醒/锁屏解锁不触发（需真登录）。
 - `schtasks`/`cscript`/`wscript` 被安全策略禁用，崩溃自愈/定时保活做不了，需用户在安全中心放开策略。

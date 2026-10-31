@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XJ Store · 按钮转圈动画预览（全站）</title>
+<style>
+:root{
+  --primary:#2b6df6; --primary-hover:#1f5be0; --primary-soft:#e8f0ff;
+  --text-1:#1a2233; --text-2:#5b6678; --surface:#fff; --surface-2:#f3f5f9;
+  --border:#e6e9f0; --border-strong:#cdd3e0; --radius:14px;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--surface-2);color:var(--text-1);padding:28px;}
+.wrap{max-width:880px;margin:0 auto;background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:28px;box-shadow:0 10px 40px rgba(20,40,90,.06);}
+h1{font-size:20px;margin:0 0 4px}
+p.sub{color:var(--text-2);margin:0 0 22px;font-size:14px}
+.row{display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin:14px 0}
+.label{width:100%;font-size:13px;font-weight:600;color:var(--text-2);margin-top:18px;border-bottom:1px dashed var(--border);padding-bottom:6px}
+
+/* 顶栏（复刻生产 .nav-item / .brand + .nav-spinner） */
+.topbar{display:flex;align-items:center;gap:18px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 16px;margin-bottom:6px}
+.brand{display:flex;align-items:center;gap:8px;font-weight:800;text-decoration:none;color:var(--text-1)}
+.brand-logo{width:26px;height:26px;border-radius:7px;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800}
+.nav-item{display:flex;align-items:center;gap:6px;text-decoration:none;color:var(--text-2);font-weight:600;padding:6px 10px;border-radius:9px;position:relative}
+.nav-item.active{color:var(--primary)}
+.nav-spinner{width:0;height:0;border:0 solid currentColor;border-top-color:transparent;border-radius:50%;display:inline-block;vertical-align:-2px;opacity:0;transition:width .2s,height .2s,opacity .2s;animation:navSpin .6s linear infinite}
+.nav-item.loading .nav-spinner,.brand.loading .nav-spinner{width:13px;height:13px;border-width:2px;opacity:1}
+.nav-item.loading,.brand.loading{pointer-events:none}
+.nav-item:not(.nav-ai).loading{background:var(--surface-2)}
+@keyframes navSpin{to{transform:rotate(360deg)}}
+
+/* 通用按钮（复刻生产 .btn + .btn-spinner.float） */
+.btn{height:44px;border-radius:var(--radius);font-size:15px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:7px;transition:all .15s;padding:0 24px;position:relative;overflow:hidden;text-decoration:none;cursor:pointer;border:none;font-family:inherit}
+.btn svg{width:17px;height:17px}
+.btn-primary{background:var(--primary);color:#fff;box-shadow:0 4px 14px rgba(43,109,246,.28)}
+.btn-ghost{background:var(--primary-soft);color:var(--primary)}
+.btn-outline{background:transparent;border:1px solid var(--border-strong);color:var(--text-2)}
+.btn-sm{height:36px;font-size:13.5px;padding:0 16px}
+.btn.loading,button.loading{cursor:progress}
+
+.btn-spinner{box-sizing:border-box;width:0;height:0;margin:0;border:0 solid currentColor;border-top-color:transparent;border-radius:50%;display:inline-block;vertical-align:-2px;opacity:0;pointer-events:none;transition:width .2s,height .2s,opacity .2s;animation:navSpin .6s linear infinite}
+.btn-spinner.float{width:16px;height:16px;border-width:2px;opacity:1;color:var(--primary)}
+button:not(.btn),input[type=submit],input[type=button]{position:relative}
+
+.plain-btn{height:42px;padding:0 20px;border:1px solid var(--border-strong);border-radius:10px;background:#fff;font-size:14px;cursor:pointer;font-family:inherit}
+.sub-submit{height:42px;padding:0 18px;border:1px solid var(--primary);background:var(--primary);color:#fff;border-radius:10px;font-size:14px;cursor:pointer;font-family:inherit}
+.inp-btn{height:42px;padding:0 18px;border:1px solid var(--primary);background:transparent;color:var(--primary);border-radius:10px;font-size:14px;cursor:pointer;font-family:inherit}
+
+/* 暗色演示 */
+.dark{background:#0f1626!important;color:#e8edf7;border-color:#26314a!important}
+.dark .topbar{background:#16203a;border-color:#26314a}
+.dark .nav-item{color:#9fb0cf}
+.dark .nav-item.active{color:#7aa2ff}
+.dark .nav-item:not(.nav-ai).loading{background:#1d294a}
+.dark .brand{color:#e8edf7}
+.dark .btn-outline{background:transparent;border-color:#3a4a66;color:#cdd6e8}
+.dark .plain-btn{background:#16203a;border-color:#26314a;color:#e8edf7}
+.dark .btn-spinner.float{color:#fff}
+.note{font-size:12.5px;color:var(--text-2);line-height:1.6}
+code{background:var(--surface-2);padding:1px 6px;border-radius:5px;font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>XJ Store · 按钮点击转圈动画（全站通用）</h1>
+  <p class="sub">点击任意按钮，右侧都会出现转圈圈；页面跳转类按钮会短暂停顿再跳。</p>
+
+  <div class="label">顶栏导航（内部 spinner，复刻生产）</div>
+  <div class="topbar">
+    <a class="brand" href="store.html"><span class="brand-logo">X</span><span class="brand-name">XJ Store</span><span class="nav-spinner" aria-hidden="true"></span></a>
+    <a class="nav-item active" href="store.html">首页<span class="nav-spinner" aria-hidden="true"></span></a>
+    <a class="nav-item" href="blog.html">博客<span class="nav-spinner" aria-hidden="true"></span></a>
+    <a class="nav-item nav-ai" href="ai.html">XJ AI<span class="nav-spinner" aria-hidden="true"></span></a>
+  </div>
+
+  <div class="label">操作按钮（.btn 系列）</div>
+  <div class="row">
+    <a class="btn btn-primary" href="checkout.html">去结算</a>
+    <button class="btn btn-primary">立即购买</button>
+    <a class="btn btn-ghost" href="#">收藏</a>
+    <button class="btn btn-outline">取消</button>
+    <button class="btn btn-primary btn-sm">小按钮</button>
+    <a class="btn btn-outline btn-sm" href="cart.html">查看购物车</a>
+  </div>
+
+  <div class="label">原生按钮 / 表单提交（float 浮层 spinner）</div>
+  <div class="row">
+    <button class="plain-btn">普通 button</button>
+    <input class="sub-submit" type="submit" value="提交订单">
+    <input class="inp-btn" type="button" value="普通 input button">
+  </div>
+
+  <div class="label">暗色主题演示（spinner 自动转白色）</div>
+  <div class="topbar dark">
+    <a class="brand" href="store.html"><span class="brand-logo">X</span><span class="brand-name">XJ Store</span><span class="nav-spinner" aria-hidden="true"></span></a>
+    <a class="nav-item active" href="store.html">首页<span class="nav-spinner" aria-hidden="true"></span></a>
+    <a class="nav-item" href="blog.html">博客<span class="nav-spinner" aria-hidden="true"></span></a>
+  </div>
+  <div class="row dark" style="border:1px solid #26314a;border-radius:12px;padding:16px">
+    <button class="btn btn-primary">立即购买</button>
+    <a class="btn btn-ghost" href="#">收藏</a>
+    <button class="plain-btn">普通 button</button>
+  </div>
+
+  <p class="note" style="margin-top:24px">
+    说明：生产环境已接入 <code>assets/base.css</code> 与 <code>assets/base.js</code>，覆盖全站
+    <code>a.btn</code> / <code>button</code> / <code>input[type=submit]</code> / <code>input[type=button]</code>，
+    以及顶栏 <code>.nav-item</code> / <code>.brand</code>。颜色随主题/风格（亮/暗/玻璃/ore）自动适配。
+  </p>
+</div>
+<script>
+// 复刻生产逻辑：导航项内部 spinner + 通用按钮右侧 float spinner
+document.addEventListener('click', (e) => {
+  const link = e.target.closest('a.nav-item, a.brand');
+  if (link) {
+    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    const href = (link.getAttribute('href') || '').trim();
+    if (!/\.html/.test(href)) return;
+    if (link.classList.contains('loading')) { e.preventDefault(); return; }
+    e.preventDefault();
+    link.classList.add('loading');
+    const here = location.pathname.split('/').pop();
+    const target = href.split('#')[0].split('?')[0];
+    if (target === here) {
+      setTimeout(() => { link.classList.remove('loading'); window.scrollTo({ top: 0, behavior: 'smooth' }); }, 520);
+    } else {
+      setTimeout(() => { location.href = href; }, 460);
+    }
+    return;
+  }
+  if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+  const el = e.target.closest('a.btn, button, input[type=submit], input[type=button]');
+  if (!el) return;
+  if (el.dataset.loading === '1') { e.preventDefault(); return; }
+  const href = (el.getAttribute && el.getAttribute('href')) || '';
+  const isPageLink = el.tagName === 'A' && /\.html/.test(href.trim());
+  el.dataset.loading = '1';
+  el.classList.add('loading');
+  const rect = el.getBoundingClientRect();
+  const sp = document.createElement('span');
+  sp.className = 'btn-spinner float';
+  sp.setAttribute('aria-hidden', 'true');
+  const size = 16;
+  sp.style.position = 'fixed';
+  sp.style.left = (rect.right + 8) + 'px';
+  sp.style.top = (rect.top + rect.height / 2 - size / 2) + 'px';
+  sp.style.zIndex = '9999';
+  document.body.appendChild(sp);
+  setTimeout(() => { sp.remove(); delete el.dataset.loading; el.classList.remove('loading'); }, 1100);
+  if (isPageLink) { e.preventDefault(); setTimeout(() => { location.href = href.trim(); }, 420); }
+});
+</script>
+</body>
+</html>

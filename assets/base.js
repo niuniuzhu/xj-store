@@ -921,7 +921,7 @@
 
   function headerHTML(active) {
     const navs = NAVS.map(n =>
-      `<a class="nav-item ${n.cls || ''} ${n.key === active ? 'active' : ''}" href="${n.href}">${n.icon}<span class="nav-text">${tr(n.text)}</span></a>`
+      `<a class="nav-item ${n.cls || ''} ${n.key === active ? 'active' : ''}" href="${n.href}">${n.icon}<span class="nav-text">${tr(n.text)}</span><span class="nav-spinner" aria-hidden="true"></span></a>`
     ).join('');
 
     const u = user();
@@ -946,6 +946,7 @@
       <a class="brand" href="store.html">
         <span class="brand-logo">X</span>
         <span class="brand-name">XJ Store</span>
+        <span class="nav-spinner" aria-hidden="true"></span>
       </a>
       <nav class="nav">${navs}</nav>
       <div class="header-right">
@@ -974,7 +975,7 @@
     <div class="nav-drawer-mask" id="navMask" hidden></div>
     <aside class="nav-drawer" id="navDrawer" aria-hidden="true">
       <div class="drawer-head">
-        <a class="brand" href="store.html"><span class="brand-logo">X</span><span class="brand-name">XJ Store</span></a>
+        <a class="brand" href="store.html"><span class="brand-logo">X</span><span class="brand-name">XJ Store</span><span class="nav-spinner" aria-hidden="true"></span></a>
         <button class="icon-btn" id="navClose" title="${tr('关闭菜单')}" aria-label="${tr('关闭菜单')}">${ICON.close}</button>
       </div>
       <nav class="drawer-nav">
@@ -1098,6 +1099,63 @@
     cart.syncBadge();
     bindRipple();
     bindToTop();
+
+    /* 导航按钮点击加载转圈：点击「商店 / 首页」等后，按钮旁出现 spinner，
+       短暂停顿再跳转；当前页则仅脉冲并回顶。修饰键点击保留「新标签打开」 */
+    document.addEventListener('click', (e) => {
+      const link = e.target.closest('a.nav-item, a.brand');
+      if (!link) return;
+      if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const href = (link.getAttribute('href') || '').trim();
+      if (!/\.html/.test(href)) return;
+      if (link.classList.contains('loading')) { e.preventDefault(); return; }
+      e.preventDefault();
+      link.classList.add('loading');
+      const here = location.pathname.split('/').pop();
+      const target = href.split('#')[0].split('?')[0];
+      if (target === here) {
+        setTimeout(() => { link.classList.remove('loading'); window.scrollTo({ top: 0, behavior: 'smooth' }); }, 520);
+      } else {
+        setTimeout(() => { location.href = href; }, 460);
+      }
+    });
+
+    /* 通用按钮点击加载转圈：覆盖全站 a.btn / button / input[type=submit|button]。
+       点击后在按钮右侧浮出 spinner（fixed 浮层），不阻塞默认行为；页面跳转类按钮延时 420ms
+       跳转以便 spinner 可见，其余按钮 1.1s 后自动消失。导航项(.nav-item/.brand)由上方逻辑处理，跳过 */
+    function showBtnSpinner(el) {
+      el.dataset.loading = '1';
+      el.classList.add('loading');
+      const rect = el.getBoundingClientRect();
+      const sp = document.createElement('span');
+      sp.className = 'btn-spinner float';
+      sp.setAttribute('aria-hidden', 'true');
+      const size = 16;
+      sp.style.position = 'fixed';
+      sp.style.left = (rect.right + 8) + 'px';
+      sp.style.top = (rect.top + rect.height / 2 - size / 2) + 'px';
+      sp.style.zIndex = '9999';
+      document.body.appendChild(sp);
+      setTimeout(() => {
+        sp.remove();
+        delete el.dataset.loading;
+        el.classList.remove('loading');
+      }, 1100);
+    }
+    document.addEventListener('click', (e) => {
+      if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      if (e.target.closest('a.nav-item, a.brand')) return;
+      const el = e.target.closest('a.btn, button, input[type=submit], input[type=button]');
+      if (!el) return;
+      if (el.dataset.loading === '1') { e.preventDefault(); return; }
+      const href = (el.getAttribute && el.getAttribute('href')) || '';
+      const isPageLink = el.tagName === 'A' && /\.html/.test(href.trim());
+      showBtnSpinner(el);
+      if (isPageLink) {
+        e.preventDefault();
+        setTimeout(() => { location.href = href.trim(); }, 420);
+      }
+    });
 
     // 维护模式拦截：仅对前台访客页面生效，后台/维护页/封禁页放行
     if (!isAdminPage && !isMaint && !isBanned) guardMaintenance();

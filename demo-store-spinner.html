@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>商店按钮加载转圈 · 预览</title>
+<style>
+  :root {
+    --primary: #2b6df6;
+    --primary-soft: rgba(43, 109, 246, .12);
+    --surface: #fff;
+    --surface-2: #f1f4f9;
+    --border: #e6eaf1;
+    --text: #1c2330;
+    --text-2: #5a6577;
+    --header-h: 60px;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: #f6f8fc; color: var(--text); }
+
+  /* ===== 与线上 base.css 完全一致的导航按钮 + 转圈样式 ===== */
+  .header { position: sticky; top: 0; z-index: 50; background: rgba(255,255,255,.82);
+            backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
+  .header-inner { height: var(--header-h); display: flex; align-items: center; gap: 18px; padding: 0 22px; }
+  .brand { display: flex; align-items: center; gap: 10px; flex-shrink: 0; text-decoration: none; color: var(--text); }
+  .brand-logo { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center;
+                background: linear-gradient(135deg,#6a5cff,#2b6df6 55%,#35c6f4); color: #fff; font-weight: 800; }
+  .brand-name { font-size: 16px; font-weight: 800; letter-spacing: .3px; }
+  .nav { display: flex; align-items: center; gap: 4px; margin-left: 26px; flex: 1; }
+  .nav-item {
+    display: flex; align-items: center; gap: 6px; padding: 7px 14px;
+    border-radius: 999px; color: var(--text-2); font-size: 14px; text-decoration: none;
+    transition: background .15s, color .15s; cursor: pointer;
+  }
+  .nav-item:hover { background: var(--surface-2); color: var(--text); }
+  .nav-item.active { background: var(--primary-soft); color: var(--primary); font-weight: 600; }
+  .nav-item svg { width: 15px; height: 15px; }
+  .nav-item.nav-ai {
+    color: #fff; background: linear-gradient(135deg, #6a5cff, #2b6df6 55%, #35c6f4);
+    box-shadow: 0 2px 8px rgba(58, 104, 246, .3); font-weight: 600;
+  }
+  .nav-item.nav-ai:hover { filter: brightness(1.06); }
+
+  /* ===== 核心：点击后按钮旁出现转圈 ===== */
+  .nav-spinner {
+    width: 0; height: 0;
+    border: 0 solid currentColor; border-top-color: transparent;
+    border-radius: 50%;
+    display: inline-block; vertical-align: -2px;
+    opacity: 0;
+    transition: width .2s ease, height .2s ease, opacity .2s ease;
+    animation: navSpin .6s linear infinite;
+  }
+  .nav-item.loading .nav-spinner,
+  .brand.loading .nav-spinner {
+    width: 13px; height: 13px;
+    border-width: 2px; opacity: 1;
+  }
+  .nav-item.loading,
+  .brand.loading { pointer-events: none; }
+  .nav-item:not(.nav-ai).loading { background: var(--surface-2); }
+  @keyframes navSpin { to { transform: rotate(360deg); } }
+
+  /* 暗色主题演示 */
+  body.dark { background: #11151c; --surface:#1a1f29; --surface-2:#222936; --border:#2a323f; --text:#e8edf5; --text-2:#9aa6b8; }
+  body.dark .header { background: rgba(20,25,33,.82); }
+
+  .hint { max-width: 720px; margin: 40px auto; padding: 0 22px; line-height: 1.7; color: var(--text-2); }
+  .hint h2 { color: var(--text); }
+  .pill { display:inline-block; padding:3px 10px; border-radius:999px; background:var(--primary-soft); color:var(--primary); font-size:13px; }
+  .toolbar { max-width:720px; margin: 0 auto; padding: 0 22px; }
+  button.tg { padding:8px 14px; border:1px solid var(--border); background:var(--surface); color:var(--text); border-radius:10px; cursor:pointer; }
+</style>
+</head>
+<body>
+  <header class="header">
+    <div class="header-inner">
+      <a class="brand" href="store.html"><span class="brand-logo">X</span><span class="brand-name">XJ Store</span><span class="nav-spinner" aria-hidden="true"></span></a>
+      <nav class="nav">
+        <a class="nav-item active" href="store.html"><span class="nav-text">首页</span><span class="nav-spinner" aria-hidden="true"></span></a>
+        <a class="nav-item" href="blog.html"><span class="nav-text">博客</span><span class="nav-spinner" aria-hidden="true"></span></a>
+        <a class="nav-item nav-ai" href="ai.html"><span class="nav-text">XJ AI</span><span class="nav-spinner" aria-hidden="true"></span></a>
+        <a class="nav-item" href="account-center.html"><span class="nav-text">账号中心</span><span class="nav-spinner" aria-hidden="true"></span></a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="toolbar"><button class="tg" id="themeBtn">切换暗色 / 亮色</button></div>
+
+  <div class="hint">
+    <h2>商店按钮加载转圈 <span class="pill">已接入 XJ Store 顶栏</span></h2>
+    <p>点击顶栏任意导航项（<b>首页 / 博客 / XJ AI / 账号中心</b>）或左上角 <b>XJ Store</b> 标志：按钮文字旁会立刻出现一个跟随主题色的转圈圈，停顿约 0.46 秒后再跳转；若已在当前页，则转圈约 0.52 秒后仅回滚到顶部。修饰键（Ctrl / ⌘ / Shift 点击）仍可「新标签打开」。</p>
+    <p>颜色用 <code>currentColor</code>，所以亮色、暗色、玻璃、ore 各主题下都能正确显示；XJ AI 渐变胶囊上的圈是白色。试试上面的主题切换。</p>
+  </div>
+
+<script>
+  // 与线上 base.js 完全一致的逻辑
+  document.addEventListener('click', (e) => {
+    const link = e.target.closest('a.nav-item, a.brand');
+    if (!link) return;
+    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    const href = (link.getAttribute('href') || '').trim();
+    if (!/\.html/.test(href)) return;
+    if (link.classList.contains('loading')) { e.preventDefault(); return; }
+    e.preventDefault();
+    link.classList.add('loading');
+    const here = location.pathname.split('/').pop();
+    const target = href.split('#')[0].split('?')[0];
+    if (target === here) {
+      setTimeout(() => { link.classList.remove('loading'); window.scrollTo({ top: 0, behavior: 'smooth' }); }, 520);
+    } else {
+      // 真实站点此处会 location.href = href；预览里只复位以便反复体验
+      setTimeout(() => { link.classList.remove('loading'); }, 460);
+    }
+  });
+  document.getElementById('themeBtn').addEventListener('click', () => document.body.classList.toggle('dark'));
+</script>
+</body>
+</html>

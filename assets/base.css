@@ -126,6 +126,49 @@ input, textarea, select { font-family: inherit; font-size: 14px; }
 .nav-item.nav-ai.active { background: linear-gradient(135deg, #4b3ef0, #1f5fe0 55%, #22b8ea); color: #fff; box-shadow: 0 4px 14px rgba(43, 109, 246, .45); }
 .nav-item.nav-ai svg { stroke-width: 1.8; }
 
+/* 导航按钮点击加载转圈：点击「商店 / 首页」等后，按钮旁出现 spinner，
+   短暂停顿再跳转；当前页则仅脉冲并回顶。颜色跟随 currentColor，自动适配各主题/风格 */
+.nav-spinner {
+  width: 0; height: 0;
+  border: 0 solid currentColor; border-top-color: transparent;
+  border-radius: 50%;
+  display: inline-block; vertical-align: -2px;
+  opacity: 0;
+  transition: width .2s ease, height .2s ease, opacity .2s ease;
+  animation: navSpin .6s linear infinite;
+}
+.nav-item.loading .nav-spinner,
+.brand.loading .nav-spinner {
+  width: 13px; height: 13px;
+  border-width: 2px; opacity: 1;
+}
+.nav-item.loading,
+.brand.loading { pointer-events: none; }
+.nav-item:not(.nav-ai).loading { background: var(--surface-2); }
+@keyframes navSpin { to { transform: rotate(360deg); } }
+
+/* 通用按钮点击加载转圈：点击任意按钮后，按钮右侧浮出 spinner（fixed 浮层，不侵入布局）。
+   颜色跟随主题/风格：浅色蓝、深色白、ore 矿金。不阻塞默认行为，1.1s 自动消失 */
+.btn-spinner {
+  box-sizing: border-box;
+  width: 0; height: 0; margin: 0;
+  border: 0 solid currentColor; border-top-color: transparent;
+  border-radius: 50%;
+  display: inline-block; vertical-align: -2px;
+  opacity: 0; pointer-events: none;
+  transition: width .2s ease, height .2s ease, opacity .2s ease;
+  animation: navSpin .6s linear infinite;
+}
+.btn-spinner.float {
+  width: 16px; height: 16px;
+  border-width: 2px; opacity: 1; color: var(--primary);
+}
+html.dark-mode .btn-spinner.float,
+.glass-mode .btn-spinner.float { color: #ffffff; }
+.ore-mode .btn-spinner.float { color: #ffd479; }
+.btn.loading, button.loading { cursor: progress; }
+button:not(.btn), input[type=submit], input[type=button] { position: relative; }
+
 .header-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 .hbtn {
   display: flex; align-items: center; gap: 6px; padding: 7px 12px;
